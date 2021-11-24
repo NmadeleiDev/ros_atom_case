@@ -26,7 +26,8 @@ const StyledDiv = styled.div`
 
     & .map {
       width: 100%;
-      height: calc(100vw - 50px);
+      height: ${({ theme }) =>
+        "calc(100vh - " + theme.dimentions.header.height + ")"};
     }
   }
 
