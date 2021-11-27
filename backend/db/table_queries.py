@@ -1,7 +1,7 @@
-schema_create_query = """create schema is not exists rosatom_case"""
+schema_create_query = """create schema if not exists rosatom_case"""
 
 images_table_query = """
-create table is not exists rosatom_case.images
+create table if not exists rosatom_case.images
 (
 	id serial
 		constraint images_pk

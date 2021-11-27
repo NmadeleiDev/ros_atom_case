@@ -20,7 +20,7 @@ class DbManager():
     def cursor_wrapper(f):
         def db_fn(self, *args, **kwargs):
             cursor = self.conn.cursor()
-            res = f(*args, **kwargs, cursor=cursor)
+            res = f(self, *args, **kwargs, cursor=cursor)
             cursor.close()
             return res
         return db_fn
