@@ -60,21 +60,21 @@ services:
       - "traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/backend" # declare middleware
       - "traefik.http.routers.rosatom-backend.rule=Host(`${HOST:-localhost}`) && PathPrefix(`/backend`)"
       - "traefik.http.routers.rosatom-backend.middlewares=test-compress,backend-stripprefix" # apply middleware
-  front:
-    build:
-      context: ./front
-      dockerfile: Dockerfile
-      # args:
-      #   NEXT_PUBLIC_BACKEND_HOSTNAME: rosatom.ml
-      #   NEXT_PUBLIC_PROTOCOL: https
-    environment:
-      NEXT_PUBLIC_BACKEND_HOSTNAME: startup-guide.ml
-      NEXT_PUBLIC_PROTOCOL: https
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.middlewares.test-compress.compress=true" 
-      - "traefik.http.routers.rosatom-front.rule=Host(`${HOST:-localhost}`)"
-      - "traefik.http.routers.rosatom-front.middlewares=test-compress" # apply middleware
+  # front:
+  #   build:
+  #     context: ./front
+  #     dockerfile: Dockerfile
+  #     # args:
+  #     #   NEXT_PUBLIC_BACKEND_HOSTNAME: rosatom.ml
+  #     #   NEXT_PUBLIC_PROTOCOL: https
+  #   environment:
+  #     NEXT_PUBLIC_BACKEND_HOSTNAME: startup-guide.ml
+  #     NEXT_PUBLIC_PROTOCOL: https
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.middlewares.test-compress.compress=true" 
+  #     - "traefik.http.routers.rosatom-front.rule=Host(`${HOST:-localhost}`)"
+  #     - "traefik.http.routers.rosatom-front.middlewares=test-compress" # apply middleware
   db:
     image: postgres
     restart: always
@@ -89,7 +89,7 @@ services:
     labels: # endpoint only for dev
       - "traefik.enable=true"
       - "traefik.http.middlewares.test-compress.compress=true" 
-      - "traefik.http.middlewares.db-stripprefix.stripprefix.prefixes=/db-postgres" # declare middleware
-      - "traefik.http.routers.db.rule=Host(`${HOST:-localhost}`) && PathPrefix(`/db`)"
-      - "traefik.http.routers.db.middlewares=test-compress,db-stripprefix" # apply middleware
+      - "traefik.http.middlewares.db-stripprefix.stripprefix.prefixes=/db" # declare middleware
+      - "traefik.http.routers.rosatom-db.rule=Host(`${HOST:-localhost}`) && PathPrefix(`/db`)"
+      - "traefik.http.routers.rosatom-db.middlewares=test-compress,db-stripprefix" # apply middleware
     # check with docker run -it --rm --network rolling_drones_default postgres psql -h db -U postgres
