@@ -93,3 +93,24 @@ services:
       - "traefik.http.routers.rosatom-db.rule=Host(`${HOST:-localhost}`) && PathPrefix(`/db`)"
       - "traefik.http.routers.rosatom-db.middlewares=test-compress,db-stripprefix" # apply middleware
     # check with docker run -it --rm --network rolling_drones_default postgres psql -h db -U postgres
+  parser:
+    build:
+      context: ./parser
+      dockerfile: Dockerfile
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - "./parser/:/app/:rw" # для правки кода без перезагрузки
+  pgadmin:
+    container_name: pgadmin4_container
+    image: dpage/pgadmin4
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: root
+    ports:
+      - "5050:80"
