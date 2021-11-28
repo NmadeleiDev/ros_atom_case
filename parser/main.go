@@ -18,7 +18,7 @@ func main() {
 	}
 	logrus.Info("Parser started...")
 	DB := db.New()
-	defer DB.Close()
+	// defer DB.Close()
 	DB.Run()
 
 }
