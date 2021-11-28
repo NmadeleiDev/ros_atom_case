@@ -1,5 +1,5 @@
-version: '3'
-services: 
+version: "3"
+services:
   traefik: # Ingress and gateway
     image: "traefik:v2.5.1"
     logging:
@@ -56,25 +56,25 @@ services:
     restart: always
     labels:
       - "traefik.enable=true"
-      - "traefik.http.middlewares.test-compress.compress=true" 
+      - "traefik.http.middlewares.test-compress.compress=true"
       - "traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/backend" # declare middleware
       - "traefik.http.routers.rosatom-backend.rule=Host(`${HOST:-localhost}`) && PathPrefix(`/backend`)"
       - "traefik.http.routers.rosatom-backend.middlewares=test-compress,backend-stripprefix" # apply middleware
-  # front:
-  #   build:
-  #     context: ./front
-  #     dockerfile: Dockerfile
-  #     # args:
-  #     #   NEXT_PUBLIC_BACKEND_HOSTNAME: rosatom.ml
-  #     #   NEXT_PUBLIC_PROTOCOL: https
-  #   environment:
-  #     NEXT_PUBLIC_BACKEND_HOSTNAME: startup-guide.ml
-  #     NEXT_PUBLIC_PROTOCOL: https
-  #   labels:
-  #     - "traefik.enable=true"
-  #     - "traefik.http.middlewares.test-compress.compress=true" 
-  #     - "traefik.http.routers.rosatom-front.rule=Host(`${HOST:-localhost}`)"
-  #     - "traefik.http.routers.rosatom-front.middlewares=test-compress" # apply middleware
+  front:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+      # args:
+      #   NEXT_PUBLIC_BACKEND_HOSTNAME: rosatom.ml
+      #   NEXT_PUBLIC_PROTOCOL: https
+    environment:
+      NEXT_PUBLIC_BACKEND_HOSTNAME: startup-guide.ml
+      NEXT_PUBLIC_PROTOCOL: https
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.test-compress.compress=true"
+      - "traefik.http.routers.rosatom-front.rule=Host(`${HOST:-localhost}`)"
+      - "traefik.http.routers.rosatom-front.middlewares=test-compress" # apply middleware
   db:
     image: postgres
     restart: always
@@ -88,7 +88,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     labels: # endpoint only for dev
       - "traefik.enable=true"
-      - "traefik.http.middlewares.test-compress.compress=true" 
+      - "traefik.http.middlewares.test-compress.compress=true"
       - "traefik.http.middlewares.db-stripprefix.stripprefix.prefixes=/db" # declare middleware
       - "traefik.http.routers.rosatom-db.rule=Host(`${HOST:-localhost}`) && PathPrefix(`/db`)"
       - "traefik.http.routers.rosatom-db.middlewares=test-compress,db-stripprefix" # apply middleware
