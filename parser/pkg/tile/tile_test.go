@@ -42,14 +42,34 @@ func TestTile_Deg2num(t *testing.T) {
 			wantY: 2,
 		},
 		{
+			name: "zoom7toAmerica",
+			fields: fields{
+				Zoom: 7,
+				Lat:  41.85,
+				Long: -87.65,
+			},
+			wantX: 32,
+			wantY: 47,
+		},
+		{
 			name: "zoom6toCyprus",
 			fields: fields{
 				Zoom: 6,
-				Lat:  35.3,
-				Long: 33.9,
+				Lat:  35.2,
+				Long: 33.0,
 			},
-			wantX: 2,
-			wantY: 2,
+			wantX: 37,
+			wantY: 25,
+		},
+		{
+			name: "zoom6toMoscow",
+			fields: fields{
+				Zoom: 6,
+				Lat:  55.7,
+				Long: 37.6,
+			},
+			wantX: 38,
+			wantY: 20,
 		},
 	}
 	for _, tt := range tests {
