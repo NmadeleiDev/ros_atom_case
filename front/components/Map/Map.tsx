@@ -1,7 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
-import GoogleMapReact from "google-map-react";
+import GoogleMapReact, { ChangeEventValue } from "google-map-react";
 import { googleMapStyles } from "styles/googleMap.styles";
+import useSWR from "swr";
+import { IPlace } from "pages/api/places";
+import Card from "./Card";
 
 const StyledDiv = styled.div`
   background-color: #fafafa;
@@ -12,9 +15,24 @@ const StyledDiv = styled.div`
 interface Props {
   className?: string;
 }
+async function fetcher<JSON = any>(
+  input: RequestInfo,
+  init?: RequestInit
+): Promise<JSON> {
+  const res = await fetch(input, init);
+  return res.json();
+}
 
 const Map = ({ className }: Props) => {
   const [coordinates, setCoordinates] = useState({ lat: 55.75, lng: 37.64 });
+  const { data } = useSWR<IPlace[]>("/api/places", fetcher);
+
+  //   console.log(data);
+
+  const onChangeHandler = (e: ChangeEventValue) => {
+    console.log(e);
+    setCoordinates({ lat: e.center.lat, lng: e.center.lng });
+  };
   return (
     <StyledDiv className={className}>
       <GoogleMapReact
@@ -30,9 +48,15 @@ const Map = ({ className }: Props) => {
           zoomControl: true,
           styles: googleMapStyles,
         }}
-        onChange={() => {}}
+        onChange={(...e) => {
+          console.log(e);
+        }}
         onChildClick={() => {}}
-      ></GoogleMapReact>
+      >
+        {data?.map((el) => (
+          <Card key={el.title} {...el} />
+        ))}
+      </GoogleMapReact>
     </StyledDiv>
   );
 };
