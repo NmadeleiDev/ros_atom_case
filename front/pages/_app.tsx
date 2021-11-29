@@ -6,6 +6,7 @@ import theme from "styles/theme";
 import { store } from "store/store";
 import React from "react";
 import Head from "next/head";
+import MainLayout from "layouts/MainLayout";
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
@@ -14,7 +15,10 @@ function MyApp({ Component, pageProps }: AppProps) {
         <Head>
           <title>EMERGENCY TRACKER</title>
         </Head>
-        <Component {...pageProps} />
+
+        <MainLayout>
+          <Component {...pageProps} />
+        </MainLayout>
       </ThemeProvider>
     </Provider>
   );

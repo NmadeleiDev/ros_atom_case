@@ -53,7 +53,7 @@ const menu: IMenuItem[] = [
     link: "/",
   },
   {
-    text: "Кампании",
+    text: "Отчёты",
     link: "/",
   },
   {
