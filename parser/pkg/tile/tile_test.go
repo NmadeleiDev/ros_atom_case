@@ -108,6 +108,16 @@ func TestTile_Num2deg(t *testing.T) {
 		wantLat  float64
 		wantLong float64
 	}{
+		// {
+		// 	name: "zoom6IslandsFromExample",
+		// 	fields: fields{
+		// 		Zoom: 6,
+		// 		X:    36,
+		// 		Y:    13,
+		// 	},
+		// 	wantLat:  55.0,
+		// 	wantLong: 37.0,
+		// },
 		{
 			name: "zoom6toMoscow",
 			fields: fields{

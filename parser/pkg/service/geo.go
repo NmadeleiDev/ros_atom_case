@@ -22,6 +22,9 @@ type GeoService struct {
 }
 
 // https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/wmts.cgi?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=MODIS_Terra_CorrectedReflectance_TrueColor&STYLE=&TILEMATRIXSET=250m&TILEMATRIX=6&TILEROW=13&TILECOL=36&FORMAT=image%2Fjpeg&TIME=2012-07-09
+/* Resources
+https://www.programmableweb.com/news/top-10-satellites-apis/brief/2020/06/14
+*/
 
 func New() *GeoService {
 	os.MkdirAll("/images", 0664)
