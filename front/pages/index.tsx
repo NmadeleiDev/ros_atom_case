@@ -50,10 +50,6 @@ const StyledDiv = styled.div`
 const Home: NextPage = () => {
   return (
     <StyledDiv>
-      <Head>
-        <title>EMERGENCY TRACKER</title>
-      </Head>
-
       <Header className="header" />
       <Sidebar className="sidebar" />
       <MainLayout className="main">

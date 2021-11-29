@@ -5,6 +5,8 @@ import { googleMapStyles } from "styles/googleMap.styles";
 import useSWR from "swr";
 import { IPlace } from "pages/api/places";
 import Card from "./Card";
+import { useAppDispatch, useAppSelector } from "store/store";
+import { setMapSlice } from "store/features/map";
 
 const StyledDiv = styled.div`
   background-color: #fafafa;
@@ -24,14 +26,13 @@ async function fetcher<JSON = any>(
 }
 
 const Map = ({ className }: Props) => {
-  const [coordinates, setCoordinates] = useState({ lat: 55.75, lng: 37.64 });
+  const { center, zoom } = useAppSelector((state) => state.map);
+  const dispatch = useAppDispatch();
   const { data } = useSWR<IPlace[]>("/api/places", fetcher);
-
-  //   console.log(data);
 
   const onChangeHandler = (e: ChangeEventValue) => {
     console.log(e);
-    setCoordinates({ lat: e.center.lat, lng: e.center.lng });
+    dispatch(setMapSlice(e));
   };
   return (
     <StyledDiv className={className}>
@@ -39,18 +40,17 @@ const Map = ({ className }: Props) => {
         bootstrapURLKeys={{
           key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API || "",
         }}
-        defaultCenter={coordinates}
-        center={coordinates}
-        defaultZoom={11}
+        defaultCenter={{ lat: 55.75, lng: 37.6 }}
+        defaultZoom={10}
+        center={center}
+        zoom={zoom}
         margin={[50, 50, 50, 50]}
         options={{
           disableDefaultUI: true,
           zoomControl: true,
           styles: googleMapStyles,
         }}
-        onChange={(...e) => {
-          console.log(e);
-        }}
+        onChange={onChangeHandler}
         onChildClick={() => {}}
       >
         {data?.map((el) => (
