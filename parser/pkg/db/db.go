@@ -75,12 +75,6 @@ func (db *DB) InsertImage() error {
 		Lon:       504.231345261,
 	}
 	db.Orm.Create(&i)
-	// res, err := db.DbHandler.Model(i).Insert()
-	// if err != nil {
-	// 	return err
-	// }
-	// fmt.Printf("res.RowsReturned(): %v\n", res.RowsReturned())
-	// fmt.Printf("res: %v\n", res)
 	return nil
 }
 

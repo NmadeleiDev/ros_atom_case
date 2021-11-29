@@ -4,7 +4,9 @@
  */
 package tile
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestTile_Deg2num(t *testing.T) {
 	type fields struct {
@@ -21,6 +23,16 @@ func TestTile_Deg2num(t *testing.T) {
 		wantY  int
 	}{
 		// TODO: Add test cases.
+		{
+			name: "zoom6toCyprus",
+			fields: fields{
+				Zoom: 3,
+				Lat:  35.2,
+				Long: 33.0,
+			},
+			wantX: 37,
+			wantY: 25,
+		},
 		{
 			name: "zoom2toAmerica",
 			fields: fields{
@@ -52,16 +64,6 @@ func TestTile_Deg2num(t *testing.T) {
 			wantY: 47,
 		},
 		{
-			name: "zoom6toCyprus",
-			fields: fields{
-				Zoom: 6,
-				Lat:  35.2,
-				Long: 33.0,
-			},
-			wantX: 37,
-			wantY: 25,
-		},
-		{
 			name: "zoom6toMoscow",
 			fields: fields{
 				Zoom: 6,
@@ -87,6 +89,52 @@ func TestTile_Deg2num(t *testing.T) {
 			}
 			if gotY != tt.wantY {
 				t.Errorf("Tile.Deg2num() gotY = %v, want %v", gotY, tt.wantY)
+			}
+		})
+	}
+}
+
+func TestTile_Num2deg(t *testing.T) {
+	type fields struct {
+		Zoom int
+		X    int
+		Y    int
+		Lat  float64
+		Long float64
+	}
+	tests := []struct {
+		name     string
+		fields   fields
+		wantLat  float64
+		wantLong float64
+	}{
+		{
+			name: "zoom6toMoscow",
+			fields: fields{
+				Zoom: 6,
+				X:    38,
+				Y:    20,
+			},
+			wantLat:  55.0,
+			wantLong: 37.0,
+		},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tr := &Tile{
+				Zoom: tt.fields.Zoom,
+				X:    tt.fields.X,
+				Y:    tt.fields.Y,
+				Lat:  tt.fields.Lat,
+				Long: tt.fields.Long,
+			}
+			gotLat, gotLong := tr.Num2deg()
+			if gotLat != tt.wantLat {
+				t.Errorf("Tile.Num2deg() gotLat = %v, want %v", gotLat, tt.wantLat)
+			}
+			if gotLong != tt.wantLong {
+				t.Errorf("Tile.Num2deg() gotLong = %v, want %v", gotLong, tt.wantLong)
 			}
 		})
 	}
