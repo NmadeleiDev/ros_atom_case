@@ -4,11 +4,19 @@
  */
 package db
 
-type Image struct {
-	tableName struct{} `pg:"images,alias:i"` // default values are the same
+import "gorm.io/gorm"
 
-	ImgFileId int64 `pg:",pk,notnull"`
+type Image struct {
+	gorm.Model
+
+	ID int `gorm:"type:bigint;primary_key,AUTO_INCREMENT"`
+
+	ImgFileId int64 `gorm:"primaryKey"`
 	Lat       float64
 	Lon       float64
 	ClassId   string `pg:"type:varchar(255)"`
+}
+
+func (i *Image) TableName() string {
+	return "rosatom_case.images"
 }

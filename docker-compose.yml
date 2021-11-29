@@ -105,6 +105,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - "./parser/:/app/:rw" # для правки кода без перезагрузки
+      - "./images/:/images" 
   pgadmin:
     container_name: pgadmin4_container
     image: dpage/pgadmin4

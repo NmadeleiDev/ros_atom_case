@@ -9,9 +9,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/go-pg/pg/v10"
-	"github.com/go-pg/pg/v10/orm"
 	"github.com/sirupsen/logrus"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
 type DB struct {
@@ -21,10 +22,11 @@ type DB struct {
 	User     string
 	Password string
 
-	DbHandler *pg.DB
+	Orm *gorm.DB
 }
 
 func New() *DB {
+	var err error
 	var ok bool
 	currOk := true
 	db := &DB{}
@@ -41,21 +43,25 @@ func New() *DB {
 	if !currOk {
 		logrus.Fatal("No env parameter")
 	}
-	db.DbHandler = pg.Connect(&pg.Options{
-		User:     db.User,
-		Password: db.Password,
-		Database: db.DBName,
-		Addr:     fmt.Sprintf("%s:%s", db.Host, db.Port),
-	})
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", db.Host, db.User, db.Password, db.DBName, db.Port)
+	db.Orm, err = gorm.Open(
+		postgres.Open(dsn),
+		&gorm.Config{
+			NamingStrategy: schema.NamingStrategy{
+				TablePrefix:   "rosatom_case.", // schema name
+				SingularTable: true,
+			},
+		})
+	if err != nil {
+		logrus.Fatal("Cannot connect to db:", err)
+	}
+
 	return db
 }
 
-func (db *DB) Close() {
-	db.DbHandler.Close()
-}
-
-func (db *DB) CreateSchema() error {
-	err := db.DbHandler.Model((*Image)(nil)).CreateTable(&orm.CreateTableOptions{IfNotExists: true})
+func (db *DB) CreateTable() error {
+	db.Orm.Exec("create schema if not exists rosatom_case")
+	err := db.Orm.Debug().AutoMigrate(&Image{})
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -68,17 +74,12 @@ func (db *DB) InsertImage() error {
 		Lat:       2.5146134162,
 		Lon:       504.231345261,
 	}
-	res, err := db.DbHandler.Model(i).Insert()
-	if err != nil {
-		return err
-	}
-	fmt.Printf("res.RowsReturned(): %v\n", res.RowsReturned())
-	fmt.Printf("res: %v\n", res)
+	db.Orm.Create(&i)
 	return nil
 }
 
 func (db *DB) Run() {
-	err := db.CreateSchema()
+	err := db.CreateTable()
 	if err != nil {
 		logrus.Error(err)
 	}
