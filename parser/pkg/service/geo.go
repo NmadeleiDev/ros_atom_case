@@ -46,9 +46,9 @@ func (gs *GeoService) KV(t time.Time) error {
 	d := &Data{
 		Layer:      "MODIS_Terra_CorrectedReflectance_TrueColor",
 		Matrix:     "250m",
-		Zoom:       6,
-		TileX:      38,
-		TileY:      20,
+		Zoom:       2,
+		TileX:      2,
+		TileY:      2,
 		Format:     url.QueryEscape("image/jpeg"),
 		TimeString: t.Format("2006-01-02"),
 	}
@@ -83,7 +83,7 @@ func (gs *GeoService) KV(t time.Time) error {
 func (gs *GeoService) Run() {
 	var err error
 	t := time.Now()
-	treshold, err := time.Parse("2006-01-02", "2021-08-01")
+	treshold, err := time.Parse("2006-01-02", "2021-11-20")
 	if err != nil {
 		logrus.Fatal(err)
 	}
