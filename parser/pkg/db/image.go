@@ -25,7 +25,7 @@ type Image struct {
 	TileY     int
 	Format    string `gorm:"type:varchar(255)"`
 	TimeShoot string `gorm:"type:varchar(255)"`
-	FileName  string `gorm:"type:varchar(255)"`
+	FileName  string `gorm:"type:varchar(255);unique"`
 }
 
 func (i *Image) TableName() string {

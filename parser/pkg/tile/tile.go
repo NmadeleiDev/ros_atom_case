@@ -57,12 +57,20 @@ func (t *Tile) Deg2num() (col int, row int) {
 	*/
 	scale := math.Exp2(float64(t.Zoom))
 
-	col = int((180 + t.Long) / 288 * scale) // max = 2560
-	row = int((90 - t.Lat) / 288 * scale)   // max = 1280
+	col = int((180 + t.Long) / 288 * scale) // max = 2560 for 11 | max = 1280
+	row = int((90 - t.Lat) / 288 * scale)   // max = 1280 for 11 | max = 640
 
 	t.Col = col
 	t.Row = row
 
+	return
+}
+
+func MaxColRow(z int) (maxCol, maxRow int) {
+	scale := math.Exp2(float64(z))
+
+	maxCol = int(360.0 / 288.0 * scale)
+	maxRow = int(180.0 / 288.0 * scale)
 	return
 }
 

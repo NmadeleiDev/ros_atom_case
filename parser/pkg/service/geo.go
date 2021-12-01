@@ -12,7 +12,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/NmadeleiDev/ros_atom_case/parser/pkg/db"
@@ -46,15 +48,29 @@ func New() *GeoService {
 
 func (gs *GeoService) Run() {
 	// X Y matrix on ZOOM = 11
-	zoom := 11
-	for x := 0; x < 2560; x++ {
-		for y := 0; y < 1280; y++ {
+	zoom := 10
+	xMax, yMax := tile.MaxColRow(zoom)
+
+	var wg sync.WaitGroup
+	for x := 0; x < xMax; x++ {
+		for y := 0; y < yMax; y++ {
+			wg.Add(1)
 			// if x == 1521 && y == 388 {
-			t := tile.NewByColRowZoom(x, y, zoom)
-			gs.GetBestImageForMonth(t)
+			go func(x, y, zoom int) {
+				defer wg.Done()
+				t := tile.NewByColRowZoom(x, y, zoom)
+				gs.GetBestImageForMonth(t)
+			}(x, y, zoom)
 			// }
 		}
 	}
+	go func() {
+		for {
+			<-time.After(time.Second * 15)
+			logrus.Infof("runtime.NumGoroutine(): %v\n", runtime.NumGoroutine())
+		}
+	}()
+	wg.Wait()
 }
 
 func (gs *GeoService) GetBestImageForMonth(tile *tile.Tile) {
@@ -115,7 +131,7 @@ func (gs *GeoService) GetImage(tile *tile.Tile, t time.Time) error {
 	defer resp.Body.Close()
 
 	if resp.ContentLength < 5*1024 {
-		logrus.Warnf("ContentLength too small (Size: %s). Perhaps bad image. Continue... ", humanize.Bytes(uint64(resp.ContentLength)))
+		logrus.Debugf("ContentLength too small (Size: %s). Perhaps bad image. Continue... ", humanize.Bytes(uint64(resp.ContentLength)))
 		// b, _ := io.ReadAll(resp.Body)
 		// logrus.Debug(string(b))
 		return nil
@@ -182,7 +198,7 @@ func (gs *GeoService) KV(t time.Time) error {
 	defer resp.Body.Close()
 
 	if resp.ContentLength < 5*1024 {
-		logrus.Warnf("ContentLength too small (Size: %s). Perhaps bad image. Continue... ", humanize.Bytes(uint64(resp.ContentLength)))
+		logrus.Debugf("ContentLength too small (Size: %s). Perhaps bad image. Continue... ", humanize.Bytes(uint64(resp.ContentLength)))
 		b, _ := io.ReadAll(resp.Body)
 		logrus.Debug(string(b))
 		return nil
