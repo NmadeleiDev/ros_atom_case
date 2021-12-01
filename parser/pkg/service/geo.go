@@ -15,11 +15,14 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 type GeoService struct {
 	Name         string
 	WMTStemplate string
+
+	DBOrm *gorm.DB
 }
 
 // https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/wmts.cgi?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=MODIS_Terra_CorrectedReflectance_TrueColor&STYLE=&TILEMATRIXSET=250m&TILEMATRIX=6&TILEROW=13&TILECOL=36&FORMAT=image%2Fjpeg&TIME=2012-07-09

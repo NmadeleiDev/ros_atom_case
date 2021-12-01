@@ -23,6 +23,16 @@ func TestTile_Deg2num(t *testing.T) {
 		wantY  int
 	}{
 		{
+			name: "zoom11toCyprus",
+			fields: fields{
+				Zoom: 11,
+				Lat:  35.315,
+				Long: 33.943,
+			},
+			wantX: 1521,
+			wantY: 388,
+		},
+		{
 			name: "zoom10toCyprus",
 			fields: fields{
 				Zoom: 10,
@@ -98,6 +108,62 @@ func TestTile_Deg2num(t *testing.T) {
 			}
 			if gotY != tt.wantY {
 				t.Errorf("Tile.Deg2num() gotY = %v, want %v", gotY, tt.wantY)
+			}
+		})
+	}
+}
+
+func TestTile_Num2deg(t *testing.T) {
+	type fields struct {
+		Zoom int
+		Col  int
+		Row  int
+		Lat  float64
+		Long float64
+	}
+	tests := []struct {
+		name     string
+		fields   fields
+		wantLat  float64
+		wantLong float64
+	}{
+		// TODO: Add test cases.
+		{
+			name: "zoom11toCyprus",
+			fields: fields{
+				Zoom: 11,
+				Col:  1521,
+				Row:  388,
+			},
+			wantLat:  35.0,
+			wantLong: 33.0,
+		},
+		{
+			name: "zoom10toCyprus",
+			fields: fields{
+				Zoom: 10,
+				Col:  760,
+				Row:  194,
+			},
+			wantLat:  35.0,
+			wantLong: 33.0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tr := &Tile{
+				Zoom: tt.fields.Zoom,
+				Col:  tt.fields.Col,
+				Row:  tt.fields.Row,
+				Lat:  tt.fields.Lat,
+				Long: tt.fields.Long,
+			}
+			gotLat, gotLong := tr.Num2deg()
+			if gotLat != tt.wantLat {
+				t.Errorf("Tile.Num2deg() gotLat = %v, want %v", gotLat, tt.wantLat)
+			}
+			if gotLong != tt.wantLong {
+				t.Errorf("Tile.Num2deg() gotLong = %v, want %v", gotLong, tt.wantLong)
 			}
 		})
 	}
