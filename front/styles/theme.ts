@@ -22,6 +22,11 @@ const light = {
       shadow: "#0000001A",
     },
   },
+  dimentions: {
+    header: {
+      height: "100px",
+    },
+  },
 };
 
 export type Theme = typeof light;

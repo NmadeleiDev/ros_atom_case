@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import styled from "styled-components";
 import cn from "classnames";
@@ -8,6 +8,7 @@ import {
   StatisticsIcon,
   SettingsIcon,
   MaleIcon,
+  MapIcon,
 } from "../Icons/Icons";
 import theme from "styles/theme";
 
@@ -77,15 +78,15 @@ export const SidebarItem = (props: IMenuItem) => {
     switch (text) {
       case "Обзор":
         return (
-          <DashboardIcon
+          <MapIcon
             className="icon"
             hovered={hover}
             activeColor={theme.colors.primary}
           />
         );
-      case "Кампании":
+      case "Отчёты":
         return (
-          <GraphIcon
+          <DashboardIcon
             className="icon"
             hovered={hover}
             activeColor={theme.colors.primary}

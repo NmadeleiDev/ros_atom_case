@@ -1,10 +1,23 @@
 import React from "react";
 import styled from "styled-components";
+import IntervalSelector from "./IntervalSelector";
+import Welcome from "./Welcome";
 
 const StyledDiv = styled.div`
   display: flex;
-  justify-content: space-between;
-  height: 50px;
+  justify-content: flex-end;
+  height: ${({ theme }) => theme.dimentions.header.height};
+
+  .welcome {
+    display: none;
+  }
+
+  @media (min-width: 700px) {
+    justify-content: space-between;
+    .welcome {
+      display: flex;
+    }
+  }
 `;
 
 interface Props {
@@ -14,8 +27,8 @@ interface Props {
 const Header = ({ className }: Props) => {
   return (
     <StyledDiv className={className}>
-      <div>Header</div>
-      <div>Login</div>
+      <Welcome className="welcome" />
+      <IntervalSelector />
     </StyledDiv>
   );
 };
