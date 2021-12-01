@@ -4,17 +4,28 @@
  */
 package db
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+)
 
 type Image struct {
 	gorm.Model
 
-	ID int `gorm:"type:bigint;primary_key,AUTO_INCREMENT"`
+	// ID int `gorm:"type:bigint;autoIncrement;primary_key"`
 
-	ImgFileId int64 `gorm:"primaryKey"`
+	ImgFileId int64
 	Lat       float64
 	Lon       float64
-	ClassId   string `pg:"type:varchar(255)"`
+	ClassId   string
+
+	Layer     string `gorm:"type:varchar(255)"`
+	Matrix    string `gorm:"type:varchar(255)"`
+	Zoom      int
+	TileX     int
+	TileY     int
+	Format    string `gorm:"type:varchar(255)"`
+	TimeShoot string `gorm:"type:varchar(255)"`
+	FileName  string `gorm:"type:varchar(255)"`
 }
 
 func (i *Image) TableName() string {

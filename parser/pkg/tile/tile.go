@@ -41,6 +41,15 @@ func NewByLatLong(lat, long float64, zoom int) (t *Tile) {
 	return
 }
 
+func NewByColRowZoom(col, row int, zoom int) *Tile {
+	t := &Tile{}
+	t.Zoom = zoom
+	t.Col = col
+	t.Row = row
+	t.Num2deg()
+	return t
+}
+
 func (t *Tile) Deg2num() (col int, row int) {
 	/*
 		Same problem! With working solution!
@@ -48,8 +57,8 @@ func (t *Tile) Deg2num() (col int, row int) {
 	*/
 	scale := math.Exp2(float64(t.Zoom))
 
-	col = int((180 + t.Long) / 288 * scale)
-	row = int((90 - t.Lat) / 288 * scale)
+	col = int((180 + t.Long) / 288 * scale) // max = 2560
+	row = int((90 - t.Lat) / 288 * scale)   // max = 1280
 
 	t.Col = col
 	t.Row = row

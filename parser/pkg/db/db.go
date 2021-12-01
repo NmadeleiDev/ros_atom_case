@@ -68,22 +68,13 @@ func (db *DB) CreateTable() error {
 	return nil
 }
 
-func (db *DB) InsertImage() error {
-	i := &Image{
-		ImgFileId: 123413413461,
-		Lat:       2.5146134162,
-		Lon:       504.231345261,
-	}
+func (db *DB) InsertImage(i *Image) error {
 	db.Orm.Create(&i)
 	return nil
 }
 
 func (db *DB) Run() {
 	err := db.CreateTable()
-	if err != nil {
-		logrus.Error(err)
-	}
-	err = db.InsertImage()
 	if err != nil {
 		logrus.Error(err)
 	}

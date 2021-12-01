@@ -6,7 +6,6 @@
 package main
 
 import (
-	"github.com/NmadeleiDev/ros_atom_case/parser/pkg/db"
 	"github.com/NmadeleiDev/ros_atom_case/parser/pkg/service"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
@@ -20,8 +19,8 @@ func main() {
 
 	logrus.SetLevel(logrus.DebugLevel)
 	logrus.Info("Parser started...")
-	DB := db.New()
-	DB.Run()
+	// DB := db.New()
+	// DB.Run()
 
 	gs := service.New()
 	gs.Run()

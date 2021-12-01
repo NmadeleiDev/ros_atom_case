@@ -6,23 +6,26 @@ package service
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/NmadeleiDev/ros_atom_case/parser/pkg/db"
+	"github.com/NmadeleiDev/ros_atom_case/parser/pkg/tile"
 	"github.com/dustin/go-humanize"
 	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 type GeoService struct {
 	Name         string
 	WMTStemplate string
 
-	DBOrm *gorm.DB
+	DB *db.DB
 }
 
 // https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/wmts.cgi?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=MODIS_Terra_CorrectedReflectance_TrueColor&STYLE=&TILEMATRIXSET=250m&TILEMATRIX=6&TILEROW=13&TILECOL=36&FORMAT=image%2Fjpeg&TIME=2012-07-09
@@ -32,9 +35,106 @@ https://www.programmableweb.com/news/top-10-satellites-apis/brief/2020/06/14
 
 func New() *GeoService {
 	os.MkdirAll("/images", 0664)
+	db := db.New()
+	db.CreateTable()
 	return &GeoService{
-		WMTStemplate: "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/wmts.cgi?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER={{.Layer}}&STYLE=&TILEMATRIXSET={{.Matrix}}&TILEMATRIX={{.Zoom}}&TILEROW={{.TileY}}&TILECOL={{.TileX}}&FORMAT={{.Format}}&TIME={{.TimeString}}",
+		WMTStemplate: "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/wmts.cgi?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER={{.Layer}}&STYLE=&TILEMATRIXSET={{.Matrix}}&TILEMATRIX={{.Zoom}}&TILEROW={{.TileY}}&TILECOL={{.TileX}}&FORMAT={{.Format}}&TIME={{.TimeShoot}}",
+
+		DB: db,
 	}
+}
+
+func (gs *GeoService) Run() {
+	// X Y matrix on ZOOM = 11
+	zoom := 11
+	for x := 0; x < 2560; x++ {
+		for y := 0; y < 1280; y++ {
+			// if x == 1521 && y == 388 {
+			t := tile.NewByColRowZoom(x, y, zoom)
+			gs.GetBestImageForMonth(t)
+			// }
+		}
+	}
+}
+
+func (gs *GeoService) GetBestImageForMonth(tile *tile.Tile) {
+	var err error
+	t := time.Now()
+	treshold := time.Now().Add(-30 * time.Hour * 24) // one month
+	logrus.Debugf("treshold.Format(time.RFC3339): %v\n", treshold.Format(time.RFC3339))
+	for {
+		if t.Before(treshold) {
+			break
+		}
+		if err = gs.GetImage(tile, t); err != nil {
+			logrus.Error(err)
+		}
+		t = t.Add(time.Hour * -24)
+		logrus.Debug("Curr time: ", t.Format("2006-01-02"))
+	}
+	logrus.Info("Gathering stopped...")
+}
+
+func (gs *GeoService) GetImage(tile *tile.Tile, t time.Time) error {
+	// i := &db.Image{
+	// 	Layer:      "MODIS_Terra_CorrectedReflectance_TrueColor",
+	// 	Matrix:     "250m",
+	// 	Zoom:       2,
+	// 	TileX:      2,
+	// 	TileY:      2,
+	// 	Format:     url.QueryEscape("image/jpeg"),
+	// 	TimeString: t.Format("2006-01-02"),
+	// }
+	i := &db.Image{
+		Layer:  "HLS_L30_Nadir_BRDF_Adjusted_Reflectance",
+		Matrix: "31.25m",
+
+		Lat: tile.Lat,
+		Lon: tile.Long,
+
+		Zoom:      tile.Zoom,
+		TileX:     tile.Col,
+		TileY:     tile.Row,
+		Format:    url.QueryEscape("image/png"),
+		TimeShoot: t.Format("2006-01-02"),
+	}
+
+	var bufUrl bytes.Buffer
+	tmpl, err := template.New("req").Parse(gs.WMTStemplate)
+	if err != nil {
+		return err
+	}
+	tmpl.Execute(&bufUrl, i)
+
+	logrus.Debug("GET to", bufUrl.String())
+
+	resp, err := http.Get(bufUrl.String())
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.ContentLength < 5*1024 {
+		logrus.Warnf("ContentLength too small (Size: %s). Perhaps bad image. Continue... ", humanize.Bytes(uint64(resp.ContentLength)))
+		// b, _ := io.ReadAll(resp.Body)
+		// logrus.Debug(string(b))
+		return nil
+	}
+
+	i.FileName = fmt.Sprintf("%s_%s_z%d_y%d_x%d_%s.png", i.Layer, strings.ReplaceAll(i.Matrix, ".", "_"), i.Zoom, i.TileY, i.TileX, i.TimeShoot)
+
+	f, err := os.Create("/images/" + i.FileName)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	n, err := f.ReadFrom(resp.Body)
+	if err != nil {
+		return err
+	}
+	logrus.Debugf("Downloaded ", humanize.Bytes(uint64(n)))
+	gs.DB.InsertImage(i)
+	return nil
 }
 
 func (gs *GeoService) KV(t time.Time) error {
@@ -101,7 +201,7 @@ func (gs *GeoService) KV(t time.Time) error {
 	return nil
 }
 
-func (gs *GeoService) Run() {
+func (gs *GeoService) BestInTime() {
 	var err error
 	t := time.Now()
 	treshold, err := time.Parse("2006-01-02", "2021-09-20")
