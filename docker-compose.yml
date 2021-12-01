@@ -108,6 +108,16 @@ services:
     volumes:
       - "./parser/:/app/:rw" # для правки кода без перезагрузки
       - "./images/:/images" 
+  image_store:
+    image: nginx:alpine
+    volumes:
+      - "./images:/usr/share/nginx/html:ro"
+    labels: 
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.test-compress.compress=true"
+      - "traefik.http.middlewares.image-stripprefix.stripprefix.prefixes=/image" # declare middleware
+      - "traefik.http.routers.rosatom-store.rule=Host(`${HOST:-localhost}`) && PathPrefix(`/image`)"
+      - "traefik.http.routers.rosatom-store.middlewares=test-compress,image-stripprefix" # apply middleware
   pgadmin:
     container_name: pgadmin4_container
     image: dpage/pgadmin4
