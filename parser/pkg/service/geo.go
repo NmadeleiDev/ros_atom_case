@@ -20,6 +20,7 @@ import (
 	"github.com/NmadeleiDev/ros_atom_case/parser/pkg/db"
 	"github.com/NmadeleiDev/ros_atom_case/parser/pkg/tile"
 	"github.com/dustin/go-humanize"
+	"github.com/panjf2000/ants/v2"
 	"github.com/sirupsen/logrus"
 )
 
@@ -47,23 +48,45 @@ func New() *GeoService {
 }
 
 func (gs *GeoService) Run() {
+	type Square struct {
+		X    int
+		Y    int
+		Zoom int
+	}
+
+	var wg sync.WaitGroup
+
+	getImage := func(i interface{}) {
+		s := i.(Square)
+		defer wg.Done()
+		t := tile.NewByColRowZoom(s.X, s.Y, s.Zoom)
+		gs.GetBestImageForMonth(t)
+
+	}
+
+	p, _ := ants.NewPoolWithFunc(50, func(i interface{}) {
+		getImage(i)
+	})
+	defer p.Release()
+
 	// X Y matrix on ZOOM = 11
 	zoom := 10
 	xMax, yMax := tile.MaxColRow(zoom)
 
-	var wg sync.WaitGroup
 	for x := 0; x < xMax; x++ {
 		for y := 0; y < yMax; y++ {
 			wg.Add(1)
+			_ = p.Invoke(Square{X: x, Y: y, Zoom: zoom})
 			// if x == 1521 && y == 388 {
-			go func(x, y, zoom int) {
-				defer wg.Done()
-				t := tile.NewByColRowZoom(x, y, zoom)
-				gs.GetBestImageForMonth(t)
-			}(x, y, zoom)
+			// go func(x, y, zoom int) {
+			// 	defer wg.Done()
+			// 	t := tile.NewByColRowZoom(x, y, zoom)
+			// 	gs.GetBestImageForMonth(t)
+			// }(x, y, zoom)
 			// }
 		}
 	}
+	logrus.Infof("running goroutines: %d\n", p.Running())
 	go func() {
 		for {
 			<-time.After(time.Second * 15)
