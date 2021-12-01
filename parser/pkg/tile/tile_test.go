@@ -135,8 +135,8 @@ func TestTile_Num2deg(t *testing.T) {
 				Col:  1521,
 				Row:  388,
 			},
-			wantLat:  35.0,
-			wantLong: 33.0,
+			wantLat:  35.4375,
+			wantLong: 33.890625,
 		},
 		{
 			name: "zoom10toCyprus",
@@ -145,8 +145,8 @@ func TestTile_Num2deg(t *testing.T) {
 				Col:  760,
 				Row:  194,
 			},
-			wantLat:  35.0,
-			wantLong: 33.0,
+			wantLat:  35.4375,
+			wantLong: 33.75,
 		},
 	}
 	for _, tt := range tests {

@@ -77,8 +77,8 @@ func MaxColRow(z int) (maxCol, maxRow int) {
 func (t *Tile) Num2deg() (lat, long float64) {
 	scale := math.Exp2(float64(t.Zoom))
 
-	t.Long = math.Floor(float64(t.Col)*288.0/scale - 180.0)
-	t.Lat = math.Floor(-float64(t.Row)*288.0/scale + 90.0)
+	t.Long = (float64(t.Col)*288.0/scale - 180.0)
+	t.Lat = (-float64(t.Row)*288.0/scale + 90.0)
 
 	long = t.Long
 	lat = t.Lat
