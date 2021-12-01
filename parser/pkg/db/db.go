@@ -79,12 +79,3 @@ func (db *DB) Run() {
 		logrus.Error(err)
 	}
 }
-
-/*
-POSTGRES_DB=postgres
-POSTGRES_HOST=db
-POSTGRES_PORT=5432
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=12345
-
-*/

@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -75,14 +74,9 @@ func (gs *GeoService) Run() {
 
 	for x := 0; x < xMax; x++ {
 		for y := 0; y < yMax; y++ {
+			// if x == 1521 && y == 388 {
 			wg.Add(1)
 			_ = p.Invoke(Square{X: x, Y: y, Zoom: zoom})
-			// if x == 1521 && y == 388 {
-			// go func(x, y, zoom int) {
-			// 	defer wg.Done()
-			// 	t := tile.NewByColRowZoom(x, y, zoom)
-			// 	gs.GetBestImageForMonth(t)
-			// }(x, y, zoom)
 			// }
 		}
 	}
@@ -174,89 +168,4 @@ func (gs *GeoService) GetImage(tile *tile.Tile, t time.Time) error {
 	logrus.Debugf("Downloaded ", humanize.Bytes(uint64(n)))
 	gs.DB.InsertImage(i)
 	return nil
-}
-
-func (gs *GeoService) KV(t time.Time) error {
-	type Data struct {
-		Layer      string
-		Matrix     string
-		Zoom       int
-		TileX      int
-		TileY      int
-		Format     string
-		TimeString string
-	}
-	// d := &Data{
-	// 	Layer:      "MODIS_Terra_CorrectedReflectance_TrueColor",
-	// 	Matrix:     "250m",
-	// 	Zoom:       2,
-	// 	TileX:      2,
-	// 	TileY:      2,
-	// 	Format:     url.QueryEscape("image/jpeg"),
-	// 	TimeString: t.Format("2006-01-02"),
-	// }
-	d := &Data{
-		Layer:      "HLS_L30_Nadir_BRDF_Adjusted_Reflectance",
-		Matrix:     "31.25m",
-		Zoom:       10,
-		TileX:      760,
-		TileY:      194,
-		Format:     url.QueryEscape("image/png"),
-		TimeString: t.Format("2006-01-02"),
-	}
-
-	var bufUrl bytes.Buffer
-	tmpl, err := template.New("req").Parse(gs.WMTStemplate)
-	if err != nil {
-		return err
-	}
-	tmpl.Execute(&bufUrl, d)
-
-	logrus.Debug("GET to", bufUrl.String())
-
-	resp, err := http.Get(bufUrl.String())
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.ContentLength < 5*1024 {
-		logrus.Debugf("ContentLength too small (Size: %s). Perhaps bad image. Continue... ", humanize.Bytes(uint64(resp.ContentLength)))
-		b, _ := io.ReadAll(resp.Body)
-		logrus.Debug(string(b))
-		return nil
-	}
-
-	f, err := os.Create("/images/" + d.TimeString + ".png")
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	n, err := f.ReadFrom(resp.Body)
-	if err != nil {
-		return err
-	}
-	logrus.Debugf("Downloaded ", humanize.Bytes(uint64(n)))
-	return nil
-}
-
-func (gs *GeoService) BestInTime() {
-	var err error
-	t := time.Now()
-	treshold, err := time.Parse("2006-01-02", "2021-09-20")
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	logrus.Debugf("treshold.Format(time.RFC3339): %v\n", treshold.Format(time.RFC3339))
-	for {
-		if t.Before(treshold) {
-			break
-		}
-		if err = gs.KV(t); err != nil {
-			logrus.Error(err)
-		}
-		t = t.Add(time.Hour * -24)
-		logrus.Debug("Curr time: ", t.Format("2006-01-02"))
-	}
-	logrus.Info("Gathering stopped...")
 }
