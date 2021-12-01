@@ -7,6 +7,7 @@ package service
 import (
 	"bytes"
 	"html/template"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -29,7 +30,7 @@ https://www.programmableweb.com/news/top-10-satellites-apis/brief/2020/06/14
 func New() *GeoService {
 	os.MkdirAll("/images", 0664)
 	return &GeoService{
-		WMTStemplate: "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/wmts.cgi?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER={{.Layer}}&STYLE=&TILEMATRIXSET={{.Matrix}}&TILEMATRIX={{.Zoom}}&TILEROW={{.TileX}}&TILECOL={{.TileY}}&FORMAT={{.Format}}&TIME={{.TimeString}}",
+		WMTStemplate: "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/wmts.cgi?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER={{.Layer}}&STYLE=&TILEMATRIXSET={{.Matrix}}&TILEMATRIX={{.Zoom}}&TILEROW={{.TileY}}&TILECOL={{.TileX}}&FORMAT={{.Format}}&TIME={{.TimeString}}",
 	}
 }
 
@@ -43,13 +44,22 @@ func (gs *GeoService) KV(t time.Time) error {
 		Format     string
 		TimeString string
 	}
+	// d := &Data{
+	// 	Layer:      "MODIS_Terra_CorrectedReflectance_TrueColor",
+	// 	Matrix:     "250m",
+	// 	Zoom:       2,
+	// 	TileX:      2,
+	// 	TileY:      2,
+	// 	Format:     url.QueryEscape("image/jpeg"),
+	// 	TimeString: t.Format("2006-01-02"),
+	// }
 	d := &Data{
-		Layer:      "MODIS_Terra_CorrectedReflectance_TrueColor",
-		Matrix:     "250m",
-		Zoom:       2,
-		TileX:      2,
-		TileY:      2,
-		Format:     url.QueryEscape("image/jpeg"),
+		Layer:      "HLS_L30_Nadir_BRDF_Adjusted_Reflectance",
+		Matrix:     "31.25m",
+		Zoom:       10,
+		TileX:      760,
+		TileY:      194,
+		Format:     url.QueryEscape("image/png"),
 		TimeString: t.Format("2006-01-02"),
 	}
 
@@ -67,7 +77,15 @@ func (gs *GeoService) KV(t time.Time) error {
 		return err
 	}
 	defer resp.Body.Close()
-	f, err := os.Create("/images/" + d.TimeString + ".jpg")
+
+	if resp.ContentLength < 5*1024 {
+		logrus.Warnf("ContentLength too small (Size: %s). Perhaps bad image. Continue... ", humanize.Bytes(uint64(resp.ContentLength)))
+		b, _ := io.ReadAll(resp.Body)
+		logrus.Debug(string(b))
+		return nil
+	}
+
+	f, err := os.Create("/images/" + d.TimeString + ".png")
 	if err != nil {
 		return err
 	}
@@ -83,7 +101,7 @@ func (gs *GeoService) KV(t time.Time) error {
 func (gs *GeoService) Run() {
 	var err error
 	t := time.Now()
-	treshold, err := time.Parse("2006-01-02", "2021-11-20")
+	treshold, err := time.Parse("2006-01-02", "2021-09-20")
 	if err != nil {
 		logrus.Fatal(err)
 	}

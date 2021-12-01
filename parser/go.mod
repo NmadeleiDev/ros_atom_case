@@ -3,6 +3,7 @@ module github.com/NmadeleiDev/ros_atom_case/parser
 go 1.17
 
 require (
+	github.com/dustin/go-humanize v1.0.0
 	github.com/joho/godotenv v1.4.0
 	github.com/sirupsen/logrus v1.8.1
 	gorm.io/driver/postgres v1.2.2
@@ -25,7 +26,4 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 )
 
-require (
-	github.com/dustin/go-humanize v1.0.0 // indirect
-	golang.org/x/sys v0.0.0-20210923061019-b8560ed6a9b7 // indirect
-)
+require golang.org/x/sys v0.0.0-20210923061019-b8560ed6a9b7 // indirect
