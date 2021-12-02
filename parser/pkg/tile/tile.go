@@ -34,11 +34,13 @@ type Conversion interface {
 	Num2deg(t *Tile) (lat float64, long float64)
 }
 
-func NewByLatLong(lat, long float64, zoom int) (t *Tile) {
+func NewByLatLong(lat, long float64, zoom int) *Tile {
+	t := &Tile{}
 	t.Lat = lat
 	t.Long = long
 	t.Zoom = zoom
-	return
+	t.Deg2num()
+	return t
 }
 
 func NewByColRowZoom(col, row int, zoom int) *Tile {
@@ -66,14 +68,6 @@ func (t *Tile) Deg2num() (col int, row int) {
 	return
 }
 
-func MaxColRow(z int) (maxCol, maxRow int) {
-	scale := math.Exp2(float64(z))
-
-	maxCol = int(360.0 / 288.0 * scale)
-	maxRow = int(180.0 / 288.0 * scale)
-	return
-}
-
 func (t *Tile) Num2deg() (lat, long float64) {
 	scale := math.Exp2(float64(t.Zoom))
 
@@ -82,6 +76,36 @@ func (t *Tile) Num2deg() (lat, long float64) {
 
 	long = t.Long
 	lat = t.Lat
+
+	return
+}
+
+func MaxColRow(z int) (maxCol, maxRow int) {
+	scale := math.Exp2(float64(z))
+
+	maxCol = int(360.0 / 288.0 * scale)
+	maxRow = int(180.0 / 288.0 * scale)
+	return
+}
+
+func GetMinMaxTilesFromRectangle(firstLat, firstLong, lastLat, lastLong float64, zoom int) (minCol, maxCol, minRow, maxRow int) {
+	firstTile := NewByLatLong(firstLat, firstLong, zoom)
+	lastTile := NewByLatLong(lastLat, lastLong, zoom)
+	if firstTile.Col > lastTile.Col {
+		minCol = lastTile.Col
+		maxCol = firstTile.Col
+	} else {
+		minCol = firstTile.Col
+		maxCol = lastTile.Col
+	}
+
+	if firstTile.Row > lastTile.Row {
+		minRow = lastTile.Row
+		maxRow = firstTile.Row
+	} else {
+		minRow = firstTile.Row
+		maxRow = lastTile.Row
+	}
 
 	return
 }
