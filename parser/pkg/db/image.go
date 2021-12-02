@@ -29,6 +29,7 @@ type Image struct {
 	TimeShoot    time.Time
 	TimeShootStr string `gorm:"-"`
 	FileName     string `gorm:"type:varchar;unique"`
+	MaskName     string `gorm:"type:varchar"`
 }
 
 func (i *Image) TableName() string {
