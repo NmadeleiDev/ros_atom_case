@@ -79,8 +79,9 @@ func (gs *GeoService) GetMexicanSpoil() {
 		s := i.(Square)
 		defer wg.Done()
 		oneTile := tile.NewByColRowZoom(s.X, s.Y, s.Zoom)
-		spoilTime, _ := time.Parse("2006-01-02", "2010-04-21")
-		gs.GetBestImageForMonthAfter(spoilTime, oneTile)
+		spoilTimeStart, _ := time.Parse("2006-01-02", "2010-04-21")
+		spoilTimeEnd, _ := time.Parse("2006-01-02", "2010-07-15")
+		gs.GetBestImageForTimeRange(spoilTimeStart, spoilTimeEnd, oneTile)
 	}
 
 	p, _ := ants.NewPoolWithFunc(50, func(i interface{}) {
@@ -89,7 +90,7 @@ func (gs *GeoService) GetMexicanSpoil() {
 	defer p.Release()
 
 	// X Y matrix on ZOOM
-	zoom := 6
+	zoom := 7
 	xMin, xMax, yMin, yMax := tile.GetMinMaxTilesFromRectangle(mexicanSpoilLeftUpSpot.Lat, mexicanSpoilLeftUpSpot.Long, mexicanSpoilRightDown.Lat, mexicanSpoilRightDown.Long, zoom)
 	logrus.Infof("xMin: %v\n", xMin)
 	logrus.Infof("xMax: %v\n", xMax)
@@ -127,7 +128,8 @@ func (gs *GeoService) Check() {
 		defer wg.Done()
 		oneTile := tile.NewByColRowZoom(s.X, s.Y, s.Zoom)
 		startTime, _ := time.Parse("2006-01-02", "2021-11-01")
-		gs.GetBestImageForMonthAfter(startTime, oneTile)
+		endTime := time.Now()
+		gs.GetBestImageForTimeRange(startTime, endTime, oneTile)
 
 	}
 
@@ -159,9 +161,10 @@ func (gs *GeoService) Check() {
 	wg.Wait()
 }
 
-func (gs *GeoService) GetBestImageForMonthAfter(t time.Time, tile *tile.Tile) {
+func (gs *GeoService) GetBestImageForTimeRange(tStart, tEnd time.Time, tile *tile.Tile) {
 	var err error
-	treshold := t.Add(30 * time.Hour * 24) // one month
+	t := tStart
+	treshold := tEnd
 	logrus.Debugf("treshold.Format(time.RFC3339): %v\n", treshold.Format(time.RFC3339))
 	for {
 		if t.After(treshold) {
