@@ -211,8 +211,14 @@ func (gs *GeoService) GetImage(tile *tile.Tile, t time.Time) error {
 		return err
 	}
 	logrus.Debugf("Downloaded ", humanize.Bytes(uint64(n)))
-	gs.DB.InsertImage(i)
-	// gs.DB.IgorDB.Notify("new_shots", fmt.Sprint(i.ID), i.FileName, i.Format)
+	err = gs.DB.InsertImage(i)
+	if err != nil {
+		return err
+	}
+	err = gs.DB.IgorDB.Notify("new_shots", fmt.Sprint(i.ID), i.FileName, i.Format)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -269,11 +275,16 @@ func (gs *GeoService) GetMexicanSpoil() {
 		}
 	}
 	logrus.Infof("running goroutines: %d\n", p.Running())
-	go func() {
-		for {
-			<-time.After(time.Second * 15)
-			logrus.Infof("runtime.NumGoroutine(): %v\n", runtime.NumGoroutine())
-		}
-	}()
 	wg.Wait()
+}
+
+func (gs *GeoService) RuntimeGoroutines() {
+	ng := 0
+	for {
+		<-time.After(time.Second * 15)
+		if runtime.NumGoroutine() != ng {
+			logrus.Infof("runtime.NumGoroutine(): %v\n", runtime.NumGoroutine())
+			ng = runtime.NumGoroutine()
+		}
+	}
 }
