@@ -74,10 +74,10 @@ func (gs *GeoService) Run() {
 
 	for x := 0; x < xMax; x++ {
 		for y := 0; y < yMax; y++ {
-			// if x == 1521 && y == 388 {
-			wg.Add(1)
-			_ = p.Invoke(Square{X: x, Y: y, Zoom: zoom})
-			// }
+			if x == 1521 && y == 388 {
+				wg.Add(1)
+				_ = p.Invoke(Square{X: x, Y: y, Zoom: zoom})
+			}
 		}
 	}
 	logrus.Infof("running goroutines: %d\n", p.Running())
@@ -129,7 +129,7 @@ func (gs *GeoService) GetImage(tile *tile.Tile, t time.Time) error {
 		TileX:     tile.Col,
 		TileY:     tile.Row,
 		Format:    url.QueryEscape("image/png"),
-		TimeShoot: t.Format("2006-01-02"),
+		TimeShoot: t,
 	}
 
 	var bufUrl bytes.Buffer
@@ -154,7 +154,7 @@ func (gs *GeoService) GetImage(tile *tile.Tile, t time.Time) error {
 		return nil
 	}
 
-	i.FileName = fmt.Sprintf("%s_%s_z%d_y%d_x%d_%s.png", i.Layer, strings.ReplaceAll(i.Matrix, ".", "_"), i.Zoom, i.TileY, i.TileX, i.TimeShoot)
+	i.FileName = fmt.Sprintf("%s_%s_z%d_y%d_x%d_%s.png", i.Layer, strings.ReplaceAll(i.Matrix, ".", "_"), i.Zoom, i.TileY, i.TileX, i.TimeShoot.Format("2006-01-02"))
 
 	f, err := os.Create("/images/" + i.FileName)
 	if err != nil {
