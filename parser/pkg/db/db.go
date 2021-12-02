@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/galeone/igor"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -22,7 +23,8 @@ type DB struct {
 	User     string
 	Password string
 
-	Orm *gorm.DB
+	Orm    *gorm.DB
+	IgorDB *igor.Database
 }
 
 func New() *DB {
@@ -56,6 +58,12 @@ func New() *DB {
 		logrus.Fatal("Cannot connect to db:", err)
 	}
 
+	igorDB, err := igor.Connect(dsn)
+	if err != nil {
+		logrus.Fatal("Cannot connect to db:", err)
+	}
+	db.IgorDB = igorDB
+
 	return db
 }
 
@@ -73,8 +81,8 @@ func (db *DB) CreateTable() error {
 }
 
 func (db *DB) InsertImage(i *Image) error {
-	db.Orm.Create(&i)
-	return nil
+	tx := db.Orm.Create(&i)
+	return tx.Error
 }
 
 func (db *DB) Run() {

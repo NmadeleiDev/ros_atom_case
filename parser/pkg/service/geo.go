@@ -247,5 +247,6 @@ func (gs *GeoService) GetImage(tile *tile.Tile, t time.Time) error {
 	}
 	logrus.Debugf("Downloaded ", humanize.Bytes(uint64(n)))
 	gs.DB.InsertImage(i)
+	gs.DB.IgorDB.Notify("new_shots", fmt.Sprint(i.ID), i.FileName, i.Format)
 	return nil
 }
