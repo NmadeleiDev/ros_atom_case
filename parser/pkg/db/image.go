@@ -20,14 +20,15 @@ type Image struct {
 	Lon       float64
 	ClassId   string
 
-	Layer     string `gorm:"type:varchar"`
-	Matrix    string `gorm:"type:varchar"`
-	Zoom      int
-	TileX     int
-	TileY     int
-	Format    string `gorm:"type:varchar"`
-	TimeShoot time.Time
-	FileName  string `gorm:"type:varchar;unique"`
+	Layer        string `gorm:"type:varchar"`
+	Matrix       string `gorm:"type:varchar"`
+	Zoom         int
+	TileX        int
+	TileY        int
+	Format       string `gorm:"type:varchar"`
+	TimeShoot    time.Time
+	TimeShootStr string `gorm:"-"`
+	FileName     string `gorm:"type:varchar;unique"`
 }
 
 func (i *Image) TableName() string {

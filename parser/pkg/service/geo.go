@@ -40,7 +40,7 @@ func New() *GeoService {
 	db := db.New()
 	db.CreateTable()
 	return &GeoService{
-		WMTStemplate: "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/wmts.cgi?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER={{.Layer}}&STYLE=&TILEMATRIXSET={{.Matrix}}&TILEMATRIX={{.Zoom}}&TILEROW={{.TileY}}&TILECOL={{.TileX}}&FORMAT={{.Format}}&TIME={{.TimeShoot}}",
+		WMTStemplate: "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/wmts.cgi?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER={{.Layer}}&STYLE=&TILEMATRIXSET={{.Matrix}}&TILEMATRIX={{.Zoom}}&TILEROW={{.TileY}}&TILECOL={{.TileX}}&FORMAT={{.Format}}&TIME={{.TimeShootStr}}",
 
 		DB: db,
 	}
@@ -74,7 +74,8 @@ func (gs *GeoService) Run() {
 
 	for x := 0; x < xMax; x++ {
 		for y := 0; y < yMax; y++ {
-			if x == 1521 && y == 388 {
+			// For Fast DEBUG (location Cyprus Bogaz)
+			if x == 760 && y == 194 {
 				wg.Add(1)
 				_ = p.Invoke(Square{X: x, Y: y, Zoom: zoom})
 			}
@@ -125,11 +126,12 @@ func (gs *GeoService) GetImage(tile *tile.Tile, t time.Time) error {
 		Lat: tile.Lat,
 		Lon: tile.Long,
 
-		Zoom:      tile.Zoom,
-		TileX:     tile.Col,
-		TileY:     tile.Row,
-		Format:    url.QueryEscape("image/png"),
-		TimeShoot: t,
+		Zoom:         tile.Zoom,
+		TileX:        tile.Col,
+		TileY:        tile.Row,
+		Format:       url.QueryEscape("image/png"),
+		TimeShoot:    t,
+		TimeShootStr: t.Format("2006-01-02"),
 	}
 
 	var bufUrl bytes.Buffer
@@ -154,7 +156,7 @@ func (gs *GeoService) GetImage(tile *tile.Tile, t time.Time) error {
 		return nil
 	}
 
-	i.FileName = fmt.Sprintf("%s_%s_z%d_y%d_x%d_%s.png", i.Layer, strings.ReplaceAll(i.Matrix, ".", "_"), i.Zoom, i.TileY, i.TileX, i.TimeShoot.Format("2006-01-02"))
+	i.FileName = fmt.Sprintf("%s_%s_z%d_y%d_x%d_%s.png", i.Layer, strings.ReplaceAll(i.Matrix, ".", "_"), i.Zoom, i.TileY, i.TileX, i.TimeShootStr)
 
 	f, err := os.Create("/images/" + i.FileName)
 	if err != nil {
