@@ -21,5 +21,5 @@ type Task struct {
 }
 
 func (t *Task) TableName() string {
-	return "rosatom_case.tasks"
+	return "rosatom_case.parser_task"
 }
