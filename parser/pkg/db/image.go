@@ -5,6 +5,8 @@
 package db
 
 import (
+	"time"
+
 	"gorm.io/gorm"
 )
 
@@ -24,7 +26,7 @@ type Image struct {
 	TileX     int
 	TileY     int
 	Format    string `gorm:"type:varchar"`
-	TimeShoot string `gorm:"type:varchar"`
+	TimeShoot time.Time
 	FileName  string `gorm:"type:varchar;unique"`
 }
 
