@@ -23,3 +23,6 @@ re: down up
 
 clean_storage:
 	rm -rf db_data/*
+
+parser:
+	rm -rf images && docker-compose kill parser || docker-compose rm -f && docker-compose up -d db && docker-compose up parser
