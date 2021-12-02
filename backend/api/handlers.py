@@ -1,7 +1,7 @@
 import logging
 from os import path, stat
 import os
-from fastapi import FastAPI, Response, status
+from fastapi import FastAPI, Response, status, UploadFile, File
 import pandas as pd
 import numpy as np
 from starlette.responses import FileResponse
@@ -10,6 +10,7 @@ from db.manager import DbManager
 from files_manager.files import get_img_path_by_id
 from .utils import *
 from .model import *
+from files_manager.files import save_img
 
 
 def apply_handlers(app: FastAPI, db: DbManager):
@@ -18,9 +19,9 @@ def apply_handlers(app: FastAPI, db: DbManager):
         return success_response({'result': 'ok'})
 
     @app.get("/records", status_code=status.HTTP_200_OK, response_model=DefaultResponseModel[list])
-    def get_services(response: Response):
+    def get_records(response: Response):
         """
-        Возвращает список записей с id и данными фотографии
+        Возвращает список последних записей по каждому квадрату
         """
         records, ok = db.get_records()
         if ok is False:
@@ -28,15 +29,14 @@ def apply_handlers(app: FastAPI, db: DbManager):
             return error_response('failed to get records')
         return success_response(records)
 
-    @app.get("/img/{img_id}", status_code=status.HTTP_200_OK)
-    def get_services(response: Response, img_id: str):
+    @app.post("/parse", status_code=status.HTTP_200_OK, response_model=DefaultResponseModel[dict])
+    def create_parsing_task(body: ParsingTask, response: Response):
         """
-        Загрузка фотографии
+        Создание запроса на парсинг
         """
-        img_path, ok = get_img_path_by_id(img_id)
+        ok = db.create_parsing_task(body.northWest.lat, body.northWest.lon, body.southEast.lat, body.southEast.lon)
+        if ok is False:
+            response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+            return error_response('failed to create parsing task')
+        return success_response()
 
-        if ok:
-            return FileResponse(img_path)
-        else:
-            response.status_code = status.HTTP_400_BAD_REQUEST
-            return error_response('img not found')

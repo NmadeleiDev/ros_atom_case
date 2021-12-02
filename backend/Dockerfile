@@ -1,7 +1,7 @@
 FROM continuumio/anaconda3
 
 RUN python -m pip install --upgrade pip
-RUN apt update && apt install -y uvicorn && pip install fastapi[all] pandas psycopg2-binary
+RUN apt update && apt install -y uvicorn && pip install fastapi[all] pandas psycopg2-binary tensorflow scikit-image Pillow
 RUN mkdir -p /app/ && apt -y install cron && mkdir -p /service_data/images
 
 COPY . /app

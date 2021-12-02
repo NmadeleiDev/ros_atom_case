@@ -61,7 +61,11 @@ services:
       - "traefik.http.routers.rosatom-backend.rule=Host(`${HOST:-localhost}`) && PathPrefix(`/backend`)"
       - "traefik.http.routers.rosatom-backend.middlewares=test-compress,backend-stripprefix" # apply middleware
     depends_on:
+      - traefik
       - db
+      - parser
+      - image_store
+
   front:
     build:
       context: ./front
@@ -77,6 +81,7 @@ services:
       - "traefik.http.middlewares.test-compress.compress=true"
       - "traefik.http.routers.rosatom-front.rule=Host(`${HOST:-localhost}`)"
       - "traefik.http.routers.rosatom-front.middlewares=test-compress" # apply middleware
+
   db:
     image: postgres
     restart: always
@@ -95,6 +100,7 @@ services:
       - "traefik.http.routers.rosatom-db.rule=Host(`${HOST:-localhost}`) && PathPrefix(`/db`)"
       - "traefik.http.routers.rosatom-db.middlewares=test-compress,db-stripprefix" # apply middleware
     # check with docker run -it --rm --network rolling_drones_default postgres psql -h db -U postgres
+
   parser:
     build:
       context: ./parser
@@ -108,6 +114,7 @@ services:
     volumes:
       - "./parser/:/app/:rw" # для правки кода без перезагрузки
       - "./images/:/images" 
+
   image_store:
     image: nginx:alpine
     volumes:
@@ -118,6 +125,7 @@ services:
       - "traefik.http.middlewares.image-stripprefix.stripprefix.prefixes=/image" # declare middleware
       - "traefik.http.routers.rosatom-store.rule=Host(`${HOST:-localhost}`) && PathPrefix(`/image`)"
       - "traefik.http.routers.rosatom-store.middlewares=test-compress,image-stripprefix" # apply middleware
+
   pgadmin:
     container_name: pgadmin4_container
     image: dpage/pgadmin4

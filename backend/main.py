@@ -1,17 +1,18 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
+from parser_integration.wait_for_shots import start_waiting
 
 from db.manager import DbManager
 from api.handlers import apply_handlers
 from files_manager.files import import_data_on_fs_to_db
+from threading import Thread
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S :', level=logging.DEBUG)
 
 db = DbManager()
 
-db.create_tables()
-import_data_on_fs_to_db(db)
+Thread(target=start_waiting).start()
 
 app = FastAPI(
     title="Service API",
