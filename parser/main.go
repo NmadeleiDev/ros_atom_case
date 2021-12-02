@@ -18,7 +18,7 @@ func main() {
 	}
 
 	// logrus.SetLevel(logrus.DebugLevel)
-	logrus.SetLevel(logrus.WarnLevel)
+	logrus.SetLevel(logrus.InfoLevel)
 	logrus.Info("Parser started...")
 
 	gs := service.New()

@@ -8,6 +8,7 @@ package db
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/galeone/igor"
 	"github.com/sirupsen/logrus"
@@ -69,11 +70,14 @@ func New() *DB {
 
 func (db *DB) CreateTable() error {
 	db.Orm.Exec("create schema if not exists rosatom_case")
-	err := db.Orm.Debug().AutoMigrate(&Image{})
+	// err := db.Orm.Debug().AutoMigrate(&Image{})
+	err := db.Orm.AutoMigrate(&Image{})
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	err = db.Orm.Debug().AutoMigrate(&Task{})
+	logrus.Info("AutoMigration completed")
+	// err = db.Orm.Debug().AutoMigrate(&Task{})
+	err = db.Orm.AutoMigrate(&Task{})
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -85,9 +89,27 @@ func (db *DB) InsertImage(i *Image) error {
 	return tx.Error
 }
 
+func (db *DB) GetTaskByID(parseTaskIDStr string) (*Task, error) {
+	task := &Task{}
+	ptID, err := strconv.Atoi(parseTaskIDStr)
+	if err != nil {
+		logrus.Error("Cannot parse parse request ID ", ptID)
+	}
+	task.ID = uint(ptID)
+	tx := db.Orm.First(&task)
+	if tx.Error != nil {
+		logrus.Error("Cannot find the task ", tx.Error)
+	}
+	return task, tx.Error
+}
+
 func (db *DB) Run() {
 	err := db.CreateTable()
 	if err != nil {
 		logrus.Error(err)
 	}
+}
+
+func (db *DB) Close() {
+	defer db.IgorDB.DB().Close()
 }

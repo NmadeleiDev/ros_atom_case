@@ -47,30 +47,51 @@ func New() *GeoService {
 }
 
 func (gs *GeoService) Run() {
-	// gs.Check()
-	gs.GetMexicanSpoil()
+	defer gs.DB.Close()
+	// go gs.GetMexicanSpoil()
+	go gs.ParseTasks()
+
+	exitCh := make(chan struct{})
+	exitCh <- struct{}{}
 }
 
-func (gs *GeoService) GetMexicanSpoil() {
+func (gs *GeoService) ParseTasks() {
+	logrus.Info("Parse Tasks started")
+	err := gs.DB.IgorDB.Listen("parse_requests", func(payload ...string) {
+		for _, parseTaskID := range payload {
+			logrus.Info("New task has come")
+			task, err := gs.DB.GetTaskByID(parseTaskID)
+			if err != nil {
+				logrus.Error(err)
+				return
+			}
+			gs.ProcessTask(task, time.Now().Add(time.Hour*24*-30), time.Now())
+		}
+	})
+	if err != nil {
+		logrus.Error(err)
+	}
+	logrus.Info("Parse Tasks stopped")
+}
+
+func (gs *GeoService) ProcessTask(task *db.Task, timeStart, timeEnd time.Time) {
 	type Spot struct {
 		Lat  float64
 		Long float64
 	}
-	// 29.778360, -89.529564 LEFTUP
-	// 28.345015, -87.101586 RIGHTDOWN
 	type Square struct {
 		X    int
 		Y    int
 		Zoom int
 	}
 
-	mexicanSpoilLeftUpSpot := &Spot{
-		Lat:  29.778360,
-		Long: -89.529564,
+	leftUpSpot := &Spot{
+		Lat:  task.Lat_1,
+		Long: task.Lon_1,
 	}
-	mexicanSpoilRightDown := &Spot{
-		Lat:  28.345015,
-		Long: -87.101586,
+	rightDownSpot := &Spot{
+		Lat:  task.Lat_2,
+		Long: task.Lon_2,
 	}
 
 	var wg sync.WaitGroup
@@ -79,9 +100,7 @@ func (gs *GeoService) GetMexicanSpoil() {
 		s := i.(Square)
 		defer wg.Done()
 		oneTile := tile.NewByColRowZoom(s.X, s.Y, s.Zoom)
-		spoilTimeStart, _ := time.Parse("2006-01-02", "2010-04-21")
-		spoilTimeEnd, _ := time.Parse("2006-01-02", "2010-07-15")
-		gs.GetBestImageForTimeRange(spoilTimeStart, spoilTimeEnd, oneTile)
+		gs.GetBestImageForTimeRange(timeStart, timeEnd, oneTile)
 	}
 
 	p, _ := ants.NewPoolWithFunc(50, func(i interface{}) {
@@ -91,7 +110,7 @@ func (gs *GeoService) GetMexicanSpoil() {
 
 	// X Y matrix on ZOOM
 	zoom := 7
-	xMin, xMax, yMin, yMax := tile.GetMinMaxTilesFromRectangle(mexicanSpoilLeftUpSpot.Lat, mexicanSpoilLeftUpSpot.Long, mexicanSpoilRightDown.Lat, mexicanSpoilRightDown.Long, zoom)
+	xMin, xMax, yMin, yMax := tile.GetMinMaxTilesFromRectangle(leftUpSpot.Lat, leftUpSpot.Long, rightDownSpot.Lat, rightDownSpot.Long, zoom)
 	logrus.Infof("xMin: %v\n", xMin)
 	logrus.Infof("xMax: %v\n", xMax)
 	logrus.Infof("yMin: %v\n", yMin)
@@ -104,60 +123,6 @@ func (gs *GeoService) GetMexicanSpoil() {
 		}
 	}
 	logrus.Infof("running goroutines: %d\n", p.Running())
-	go func() {
-		for {
-			<-time.After(time.Second * 15)
-			logrus.Infof("runtime.NumGoroutine(): %v\n", runtime.NumGoroutine())
-		}
-	}()
-	wg.Wait()
-
-}
-
-func (gs *GeoService) Check() {
-	type Square struct {
-		X    int
-		Y    int
-		Zoom int
-	}
-
-	var wg sync.WaitGroup
-
-	getImage := func(i interface{}) {
-		s := i.(Square)
-		defer wg.Done()
-		oneTile := tile.NewByColRowZoom(s.X, s.Y, s.Zoom)
-		startTime, _ := time.Parse("2006-01-02", "2021-11-01")
-		endTime := time.Now()
-		gs.GetBestImageForTimeRange(startTime, endTime, oneTile)
-
-	}
-
-	p, _ := ants.NewPoolWithFunc(50, func(i interface{}) {
-		getImage(i)
-	})
-	defer p.Release()
-
-	// X Y matrix on ZOOM = 11
-	zoom := 10
-	xMax, yMax := tile.MaxColRow(zoom)
-
-	for x := 0; x < xMax; x++ {
-		for y := 0; y < yMax; y++ {
-			// For Fast DEBUG (location Cyprus Bogaz)
-			if x == 760 && y == 194 {
-				wg.Add(1)
-				_ = p.Invoke(Square{X: x, Y: y, Zoom: zoom})
-			}
-		}
-	}
-	logrus.Infof("running goroutines: %d\n", p.Running())
-	go func() {
-		for {
-			<-time.After(time.Second * 15)
-			logrus.Infof("runtime.NumGoroutine(): %v\n", runtime.NumGoroutine())
-		}
-	}()
 	wg.Wait()
 }
 
@@ -247,6 +212,68 @@ func (gs *GeoService) GetImage(tile *tile.Tile, t time.Time) error {
 	}
 	logrus.Debugf("Downloaded ", humanize.Bytes(uint64(n)))
 	gs.DB.InsertImage(i)
-	gs.DB.IgorDB.Notify("new_shots", fmt.Sprint(i.ID), i.FileName, i.Format)
+	// gs.DB.IgorDB.Notify("new_shots", fmt.Sprint(i.ID), i.FileName, i.Format)
 	return nil
+}
+
+func (gs *GeoService) GetMexicanSpoil() {
+	type Spot struct {
+		Lat  float64
+		Long float64
+	}
+	// 29.778360, -89.529564 LEFTUP
+	// 28.345015, -87.101586 RIGHTDOWN
+	type Square struct {
+		X    int
+		Y    int
+		Zoom int
+	}
+
+	mexicanSpoilLeftUpSpot := &Spot{
+		Lat:  29.778360,
+		Long: -89.529564,
+	}
+	mexicanSpoilRightDown := &Spot{
+		Lat:  28.345015,
+		Long: -87.101586,
+	}
+
+	var wg sync.WaitGroup
+
+	getImage := func(i interface{}) {
+		s := i.(Square)
+		defer wg.Done()
+		oneTile := tile.NewByColRowZoom(s.X, s.Y, s.Zoom)
+		spoilTimeStart, _ := time.Parse("2006-01-02", "2010-04-21")
+		spoilTimeEnd, _ := time.Parse("2006-01-02", "2010-07-15")
+		gs.GetBestImageForTimeRange(spoilTimeStart, spoilTimeEnd, oneTile)
+	}
+
+	p, _ := ants.NewPoolWithFunc(50, func(i interface{}) {
+		getImage(i)
+	})
+	defer p.Release()
+
+	// X Y matrix on ZOOM
+	zoom := 7
+	xMin, xMax, yMin, yMax := tile.GetMinMaxTilesFromRectangle(mexicanSpoilLeftUpSpot.Lat, mexicanSpoilLeftUpSpot.Long, mexicanSpoilRightDown.Lat, mexicanSpoilRightDown.Long, zoom)
+	logrus.Infof("xMin: %v\n", xMin)
+	logrus.Infof("xMax: %v\n", xMax)
+	logrus.Infof("yMin: %v\n", yMin)
+	logrus.Infof("yMax: %v\n", yMax)
+
+	for x := xMin; x <= xMax; x++ {
+		for y := yMin; y <= yMax; y++ {
+			wg.Add(1)
+			_ = p.Invoke(Square{X: x, Y: y, Zoom: zoom})
+		}
+	}
+	logrus.Infof("running goroutines: %d\n", p.Running())
+	go func() {
+		for {
+			<-time.After(time.Second * 15)
+			logrus.Infof("runtime.NumGoroutine(): %v\n", runtime.NumGoroutine())
+		}
+	}()
+	wg.Wait()
 }
