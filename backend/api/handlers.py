@@ -18,16 +18,18 @@ def apply_handlers(app: FastAPI, db: DbManager):
     def test_handler():
         return success_response({'result': 'ok'})
 
-    @app.get("/records", status_code=status.HTTP_200_OK, response_model=DefaultResponseModel[list])
+    @app.get("/records", status_code=status.HTTP_200_OK, response_model=DefaultResponseModel[List[LocationData]])
     def get_records(response: Response):
         """
         Возвращает список последних записей по каждому квадрату
         """
         records, ok = db.get_records()
+        # logging.info(records)
         if ok is False:
             response.status_code = status.HTTP_400_BAD_REQUEST
             return error_response('failed to get records')
-        return success_response(records)
+        # return success_response([LocationData(**x) for x in records])
+        return success_response([x for x in records])
 
     @app.post("/parse", status_code=status.HTTP_200_OK, response_model=DefaultResponseModel[dict])
     def create_parsing_task(body: ParsingTask, response: Response):
