@@ -14,17 +14,15 @@ def import_data_on_fs_to_db(db: DbManager):
     random.seed()
     files = os.listdir(IMGS_DIR)
     for name in files:
-        img_id = name.split('.')[0]
-
-        db.insert_record(img_file_id=img_id, lat=random.random() * 180 - 90, lon=random.random() * 360 - 180)
+        db.insert_record(img_file_id=name, lat=random.random() * 180 - 90, lon=random.random() * 360 - 180)
     logging.debug("Imported {} files".format(len(files)))
     
-def get_img_path_by_id(img_id: str, format: str) -> Tuple[str, bool]:
-    pa = i_path(f'{str(img_id)}.{format}')
+def get_img_path_by_id(img_id: str) -> Tuple[str, bool]:
+    pa = i_path(f'{str(img_id)}')
     return pa, path.isfile(pa)
 
 def load_img_by_id(img_id: str) -> Tuple[str, bool]:
-    pa = i_path(f'{str(img_id)}.{format}')
+    pa = i_path(f'{str(img_id)}')
     if path.isfile(pa):
         with open(pa, 'r') as f:
             data = f.read()

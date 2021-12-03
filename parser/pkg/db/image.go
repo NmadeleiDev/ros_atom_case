@@ -30,6 +30,12 @@ type Image struct {
 	TimeShootStr string `gorm:"-"`
 	FileName     string `gorm:"type:varchar;unique"`
 	MaskName     string `gorm:"type:varchar"`
+
+	Region       string `gorm:"type:varchar"`
+	OwnerName    string `gorm:"type:varchar"`
+	SpillAreaM   float64
+	ExpVelocity  float64
+	PolutionType string `gorm:"type:varchar"`
 }
 
 func (i *Image) TableName() string {

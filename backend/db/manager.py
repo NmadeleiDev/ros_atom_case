@@ -6,6 +6,7 @@ import psycopg2
 import psycopg2.extensions
 from db.table_queries import *
 import select
+import asyncio
 
 
 class DbManager():
@@ -53,19 +54,20 @@ class DbManager():
             return [], False
 
     @cursor_wrapper
-    def listen_for_new_image_id(self, callback=None, cursor = None):
+    def listen_for_new_image_id(self, callback=None, cursor=None):
+        def handle_notify():
+            logging.debug("Pulling log")
+            self.conn.poll()
+            for notify in self.conn.notifies:
+                callback(*(notify.payload.split(',')), db=self)
+                logging.debug("Got NOTIFY: {}, {}, {}".format(notify.pid, notify.channel, notify.payload))
+
+            self.conn.notifies.clear()
+
         cursor.execute("LISTEN new_shots;")
 
-        while True:
-            if select.select([self.conn],[],[],60) == ([],[],[]):
-                logging.debug("No new shots yet")
-            else:
-                self.conn.poll()
-                while self.conn.notifies:
-                    notify = self.conn.notifies.pop(0)
-                    logging.debug( "Got NOTIFY: {}, {}, {}".format(notify.pid, notify.channel, notify.payload))
-                    callback(*(notify.payload.split('\t')), db=self)
-
+        loop = asyncio.get_event_loop()
+        loop.add_reader(self.conn, handle_notify)
 
     @cursor_wrapper
     def set_record_class_id(self, record_id: int, class_id: str, cursor = None) -> bool:

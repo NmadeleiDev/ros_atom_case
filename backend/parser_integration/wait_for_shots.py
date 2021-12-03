@@ -18,7 +18,7 @@ def execute_model(img_path: str) -> Tuple[any, str, bool]:
     return mask_path, class_id, True
 
 def new_shot_callback(record_id: int, img_name: str, img_format: str, db: DbManager = None):
-    pa, ok = get_img_path_by_id(img_name, img_format)
+    pa, ok = get_img_path_by_id(img_name)
     if not ok:
         logging.error(f"Image not found: {img_name} {img_format}")
 
