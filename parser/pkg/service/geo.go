@@ -39,7 +39,7 @@ https://reliefweb.int/sites/reliefweb.int/files/resources/0F1CFC9CD1E5A465C12577
 func New() *GeoService {
 	os.MkdirAll("/images", 0664)
 	db := db.New()
-	db.CreateTable()
+	// db.CreateTable()
 	return &GeoService{
 		WMTStemplate: "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/wmts.cgi?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER={{.Layer}}&STYLE=&TILEMATRIXSET={{.Matrix}}&TILEMATRIX={{.Zoom}}&TILEROW={{.TileY}}&TILECOL={{.TileX}}&FORMAT={{.Format}}&TIME={{.TimeShootStr}}",
 
