@@ -31,10 +31,6 @@ class MyDocument extends Document {
             href="https://fonts.gstatic.com"
             crossOrigin="anonymous"
           />
-          <link
-            href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap"
-            rel="stylesheet"
-          />
           <meta name="msapplication-TileColor" content="#00a300" />
           <meta name="theme-color" content="#ffffff"></meta>
           <meta
@@ -42,6 +38,22 @@ class MyDocument extends Document {
             content="Найдем и предупредим об аварии на нефтепроводе"
           />
           <link rel="icon" href="/favicon.ico" />
+          <link
+            href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap"
+            rel="stylesheet"
+          />
+          <link
+            rel="stylesheet"
+            href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+            integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+            crossOrigin=""
+          />
+          <script
+            async
+            src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+            integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+            crossOrigin=""
+          ></script>
         </Head>
         <body>
           <Main />
