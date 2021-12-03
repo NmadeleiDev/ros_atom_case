@@ -100,8 +100,9 @@ class DataInitializer():
         with gzip.open(ts_path, 'rb') as f:
             ts_content = pickle.loads(f.read())
 
-        with gzip.open(npy_file_path, 'rb') as f:
-            img_contents = np.load(f)
+        img_contents = np.load(gzip.GzipFile(npy_file_path))
+
+        logging.info("Img shape: {}".format(img_contents.shape))
 
         bbox = list(bbox_content)
         for ts, img_cont in zip(ts_content, img_contents):

@@ -38,8 +38,7 @@ def apply_handlers(app: FastAPI, db: DbManager):
         """
         img = db.get_image(id)
         logging.info("shape={}, img={}".format(img.shape, img))
-        # return success_response(Image.fromarray(img).tobytes())
-        return Response(content=Image.fromarray(img).tobytes(), media_type="image/png")
+        return Response(content=Image.fromarray((img[:, :, 1:4] * 255/img[:, :, 1:4].max()).astype('uint8')).tobytes(), media_type="image/png")
 
     @app.post("/parse", status_code=status.HTTP_200_OK, response_model=DefaultResponseModel[dict])
     def create_parsing_task(body: ParsingTask, response: Response):
