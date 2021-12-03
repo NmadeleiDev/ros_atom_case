@@ -1,5 +1,4 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { ChangeEventValue } from "google-map-react";
 import { LatLngLiteral } from "leaflet";
 
 interface IMapSlice {
