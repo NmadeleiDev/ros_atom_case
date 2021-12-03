@@ -41,3 +41,7 @@ yarn-error.log*
 *.zip
 
 vendor
+
+# dataset
+2021-16
+*.zip
