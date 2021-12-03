@@ -33,6 +33,7 @@ type GeoService struct {
 // https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/wmts.cgi?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=MODIS_Terra_CorrectedReflectance_TrueColor&STYLE=&TILEMATRIXSET=250m&TILEMATRIX=6&TILEROW=13&TILECOL=36&FORMAT=image%2Fjpeg&TIME=2012-07-09
 /* Resources
 https://www.programmableweb.com/news/top-10-satellites-apis/brief/2020/06/14
+https://reliefweb.int/sites/reliefweb.int/files/resources/0F1CFC9CD1E5A465C125771800376FF3-map.pdf
 */
 
 func New() *GeoService {
@@ -50,6 +51,7 @@ func (gs *GeoService) Run() {
 	defer gs.DB.Close()
 	// go gs.GetMexicanSpoil()
 	go gs.ParseTasks()
+	go gs.RuntimeGoroutines()
 
 	exitCh := make(chan struct{})
 	exitCh <- struct{}{}
