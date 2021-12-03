@@ -17,6 +17,7 @@ func main() {
 		logrus.Error(err)
 	}
 
+	// logrus.SetLevel(logrus.DebugLevel)
 	logrus.SetLevel(logrus.InfoLevel)
 	logrus.Info("Parser started...")
 

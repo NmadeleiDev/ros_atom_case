@@ -5,6 +5,8 @@
 package db
 
 import (
+	"time"
+
 	"gorm.io/gorm"
 )
 
@@ -18,14 +20,22 @@ type Image struct {
 	Lon       float64
 	ClassId   string
 
-	Layer     string `gorm:"type:varchar(255)"`
-	Matrix    string `gorm:"type:varchar(255)"`
-	Zoom      int
-	TileX     int
-	TileY     int
-	Format    string `gorm:"type:varchar(255)"`
-	TimeShoot string `gorm:"type:varchar(255)"`
-	FileName  string `gorm:"type:varchar(255);unique"`
+	Layer        string `gorm:"type:varchar"`
+	Matrix       string `gorm:"type:varchar"`
+	Zoom         int
+	TileX        int
+	TileY        int
+	Format       string `gorm:"type:varchar"`
+	TimeShoot    time.Time
+	TimeShootStr string `gorm:"-"`
+	FileName     string `gorm:"type:varchar;unique"`
+	MaskName     string `gorm:"type:varchar"`
+
+	Region       string `gorm:"type:varchar"`
+	OwnerName    string `gorm:"type:varchar"`
+	SpillAreaM   float64
+	ExpVelocity  float64
+	PolutionType string `gorm:"type:varchar"`
 }
 
 func (i *Image) TableName() string {
