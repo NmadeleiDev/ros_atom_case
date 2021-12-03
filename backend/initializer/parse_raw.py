@@ -21,6 +21,7 @@ class DataInitializer:
         self.locs_data = pd.read_excel('/reestr.xlsx')
 
         self.locs_data.drop_duplicates(subset=[''])
+        self.locs_data.rename(columns=lambda x: x.strip().replace('  ', ' '), inplace=True)
         self.locs_data.set_index('')
 
     def parse_folder(self, dir_name: str, searched_ending='') -> List[str]:
@@ -40,22 +41,22 @@ class DataInitializer:
             logging.warn("loc_name={} not in index".format(loc_name))
             return
 
-        Корректировка реестра | Unnamed: 1 | Предприятие | Лицензионный участок | Unnamed: 4 | Вид приоритетного загрязняющего вещества | Регистрационный номер загрязненного участка(предприятия) | Регистрационный номер загрязненного участка в Реестре | Старые регистрационные номера(примечание) | Местоположение загрязненного участка | Административный район | Координаты загрязненного участка(в географической системе координат) | Unnamed: 12 | Дата регистрации в Реестре | Дата факта последнего разлива | Акт технического расследования | Unnamed: 16 | Категория земель до загрязнения | Наличие специальных защитных зон | Площадь загрязненного участка, га | Уровень загрязнения почв и земель нефтью,  нефтепродуктами, мг/кг | Уровень содержания нефти, нефтепродуктов в донных отложениях водных объектов, мг/кг
-        уровень содержания нефти, нефтепродуктов в поверхностных водах, мг/куб.дм | Год планируемой рекультивации
-
         loc_info = self.locs_data.loc[loc_name]
         # hhh
-        polution_type = loc_info[]
-        area_m = loc_info[]
-        level_of_polution = loc_info[]
+        location_name = loc_name
 
-        company = loc_info[]
-        license_area = loc_info[]
-        poluted_area_reg_n = loc_info[]
-        location_of_poluted_area = loc_info[]
-        adm_region = loc_info[]
-        last_spill_date = loc_info[]
-        region_category = loc_info[]
+        polution_type = loc_info['Вид приоритетного загрязняющего вещества']
+        area_m = loc_info['Площадь загрязненного участка, га']
+        level_of_polution = loc_info['Уровень загрязнения почв и земель нефтью, нефтепродуктами, мг/кг']
+
+        company = loc_info['Предприятие']
+        license_area = loc_info['Лицензионный участок']
+        poluted_area_reg_n = loc_info['Регистрационный номер загрязненного участка(предприятия)']
+        location_of_poluted_area = loc_info['Местоположение загрязненного участка']
+        adm_region = loc_info['Административный район']
+        last_spill_date = loc_info['Дата факта последнего разлива']
+        region_category = loc_info['Категория земель до загрязнения']
+        have_special_zones = loc_info['Наличие специальных защитных зон']
 
         conts = self.parse_folder(dir_path)
         npy_file_path = [x for x in conts if x.endswith('.npy.gz')]
@@ -76,8 +77,7 @@ class DataInitializer:
             img_contents = pickle.load(f.read())
 
         for bbox, ts, img_cont in zip(bbox_content, ts_content, img_contents):
-            self.db.insert_sent_img_data(ts, bbox[0], bbox[1], img_cont, '', polution_type, area_m, level_of_polution, company,
-                                         license_area, poluted_area_reg_n, location_of_poluted_area, adm_region, last_spill_date, region_category)
+            self.db.insert_sent_img_data(ts, bbox[0], bbox[1], img_cont, '', polution_type, area_m, level_of_polution, company, license_area, poluted_area_reg_n, location_of_poluted_area, adm_region, last_spill_date, region_category, location_name, have_special_zones)
 
     def unzip_ar(self, f_path: str):
         save_dir = tempfile.TemporaryDirectory()
