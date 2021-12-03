@@ -8,6 +8,7 @@ require (
 	github.com/joho/godotenv v1.4.0
 	github.com/panjf2000/ants/v2 v2.4.6
 	github.com/sirupsen/logrus v1.8.1
+	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/postgres v1.2.2
 	gorm.io/gorm v1.22.3
 )

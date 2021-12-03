@@ -114,6 +114,7 @@ services:
     volumes:
       - "./parser/:/app/:rw" # для правки кода без перезагрузки
       - "./images/:/images" 
+      - "./patches/patches.yml:/patches/patches.yml:ro" 
 
   image_store:
     image: nginx:alpine

@@ -81,6 +81,10 @@ func (db *DB) CreateTable() error {
 	if err != nil {
 		logrus.Fatal(err)
 	}
+	err = db.Orm.AutoMigrate(&Patch{})
+	if err != nil {
+		logrus.Fatal(err)
+	}
 	return nil
 }
 
