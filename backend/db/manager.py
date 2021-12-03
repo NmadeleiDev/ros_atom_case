@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 import logging
+import pickle
 from typing import List, Tuple
 import psycopg2
 import psycopg2.extensions
@@ -116,14 +117,17 @@ class DbManager():
             return False
 
     @cursor_wrapper
-    def insert_sent_img_data(ts: datetime, coords: tuple, coords_system: str, img_npy: bytes,
-                             class_id: str, polution_type: str, area_meters: float, level_of_pol: float, cursor=None):
+    def insert_sent_img_data(self, ts: datetime, coords: tuple, coords_system: str, img_npy: bytes,
+                             class_id: str, polution_type: str, area_meters: float, level_of_pol: float, 
+                             company, license_area, poluted_area_reg_n, location_of_poluted_area, adm_region, last_spill_date, region_category,
+                             cursor=None):
 
         query = """INSERT INTO rosatom_case.sent_img_data (shoot_ts, lat, lon, npy_img_uuid,
-                             class_id, polution_type, area_meters, level_of_pol) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,)
+                             class_id, polution_type, area_meters, level_of_pol, company, license_area, poluted_area_reg_n, location_of_poluted_area, adm_region, last_spill_date, region_category,) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                              ON CONFLICT (npy_img_uuid) DO NOTHING"""
 
         lat, lon = convert_coords(coords, coords_system)
+        np_imd_bytes = pickle.dumps(img_npy)
 
-        cursor.execute(query, (ts, lat, lon, img_npy, class_id,
-                       polution_type, area_meters, level_of_pol))
+        cursor.execute(query, (ts, lat, lon, np_imd_bytes, class_id,
+                       polution_type, area_meters, level_of_pol, company, license_area, poluted_area_reg_n, location_of_poluted_area, adm_region, last_spill_date, region_category))
