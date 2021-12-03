@@ -1,10 +1,10 @@
-# Rolling Drones - Ros Atom Case
+# Detection of territories pollution using satellite images & machine learning
 
 ## Quick Start
 
 ```bash
-git clone https://github.com/NmadeleiDev/ros_atom_case
-cd ros_atom_case
+git clone https://github.com/NmadeleiDev/territoty_polution_ml_detection
+cd territoty_polution_ml_detection
 
 cp .env.example .env
 
@@ -15,8 +15,8 @@ docker-compose up -d
 или с использованием make
 
 ```bash
-git clone https://github.com/NmadeleiDev/ros_atom_case
-cd ros_atom_case
+git clone https://github.com/NmadeleiDev/territoty_polution_ml_detection
+cd territoty_polution_ml_detection
 
 cp .env.example .env
 
@@ -32,3 +32,5 @@ make up
 ### Backend
 
 ### Front
+
+### Parser
