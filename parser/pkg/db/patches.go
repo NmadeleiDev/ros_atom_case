@@ -6,7 +6,8 @@
 package db
 
 import (
-	"io/ioutil"
+	"fmt"
+	"os"
 
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
@@ -16,9 +17,9 @@ import (
 type Patch struct {
 	gorm.Model
 
-	Uid  string  `yml:"uuid" gorm:"column:varchar;unique"`
-	Lat  float64 `yml:"lat"`
-	Long float64 `yml:"lng"`
+	Uid  string  `yaml:"uid" gorm:"type:varchar;unique"`
+	Lat  float64 `yaml:"lat"`
+	Long float64 `yaml:"lng" gorm:"column:long"`
 }
 
 type Conf struct {
@@ -32,11 +33,15 @@ func NewPatch() *Patch {
 func NewPatchesFromFile(pathToYaml string) *Conf {
 	c := &Conf{}
 
-	yamlFile, err := ioutil.ReadFile(pathToYaml)
+	yamlFile, err := os.ReadFile(pathToYaml)
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	yaml.Unmarshal(yamlFile, c)
+	err = yaml.Unmarshal(yamlFile, c)
+	if err != nil {
+		logrus.Error("Cannot unmarshal: ", err)
+	}
+	logrus.Info("First patch: ", (*c.Patches)[0].Lat, (*c.Patches)[0].Long)
 
 	return c
 }
@@ -47,6 +52,10 @@ func (db *DB) SendPatchesToDB(c *Conf) {
 		if tx.Error != nil {
 			logrus.Warn("Cannot create patch: ", tx.Error)
 			continue
+		}
+		err := db.IgorDB.Notify("patches", fmt.Sprint(patch.ID))
+		if err != nil {
+			logrus.Error("Cannot notify about new patch: ", err)
 		}
 	}
 }
