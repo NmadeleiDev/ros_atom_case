@@ -22,7 +22,8 @@ def new_shot_callback(record_id: int, img_name: str, img_format: str, db: DbMana
     if not ok:
         logging.error(f"Image not found: {img_name} {img_format}")
 
-    mask_path, class_id, ok = execute_model(pa)
+    # mask_path, class_id, ok = execute_model(pa)
+    mask_path, class_id, ok = '', '', True
     if not ok:
         return
 

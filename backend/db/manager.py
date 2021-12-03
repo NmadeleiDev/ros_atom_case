@@ -46,7 +46,7 @@ class DbManager():
 
             result = cursor.fetchall()
 
-            colnames = ['img_file_id', 'lat', 'lon', 'class_id', 'time_shoot', 'format', 'file_name']
+            colnames = ['img_file_id', 'lat', 'lng', 'class_id', 'time_shoot', 'format', 'file_name']
 
             return [dict(zip(colnames, x)) for x in result], True
         except Exception as e:
