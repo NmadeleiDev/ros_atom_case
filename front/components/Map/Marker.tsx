@@ -1,42 +1,33 @@
-import { meters2ScreenPixels } from "google-map-react";
-import { useAppSelector } from "store/store";
-import styled from "styled-components";
+import theme from "styles/theme";
+import { IPlace } from "pages/api/places";
+import { Circle, Tooltip } from "react-leaflet";
+import { Card } from "./Card";
 
-const MINIMUM_MARKER_SIZE = 50;
+const MINIMUM_MARKER_SIZE = 10000;
 /**
  * TODO: adjust values according to the data from orgs
  */
-const BLUE_COLOR_MARKER_THRESHHOLD = 2000;
-const ORANGE_COLOR_MARKER_THRESHHOLD = 10000;
+const BLUE_COLOR_MARKER_THRESHHOLD = 10000;
+const ORANGE_COLOR_MARKER_THRESHHOLD = 100000;
 
-interface IMarkerProps {
-  onClick: () => void;
-  square: number;
-  lat: number;
-  lng: number;
-}
-
-const StyledCircle = styled.div<{ w: number; h: number; square: number }>`
-  background-color: ${({ square, theme }) =>
-    square < BLUE_COLOR_MARKER_THRESHHOLD
+export const Marker = (props: IPlace) => {
+  const fill =
+    props.square < BLUE_COLOR_MARKER_THRESHHOLD
       ? theme.colors.message.info
-      : square < ORANGE_COLOR_MARKER_THRESHHOLD
+      : props.square < ORANGE_COLOR_MARKER_THRESHHOLD
       ? theme.colors.message.warn
-      : theme.colors.message.error};
-  width: ${({ w }) => w + "px"};
-  height: ${({ h }) => h + "px"};
-  border-radius: 50%;
-`;
+      : theme.colors.message.error;
 
-export const Marker = ({ onClick, square, lat, lng }: IMarkerProps) => {
-  const { zoom } = useAppSelector((state) => state.map);
-  const { w, h } = meters2ScreenPixels(square, { lat, lng }, zoom);
   return (
-    <StyledCircle
-      onClick={onClick}
-      square={square}
-      w={Math.max(w, MINIMUM_MARKER_SIZE)}
-      h={Math.max(h, MINIMUM_MARKER_SIZE)}
-    />
+    <Circle
+      center={props.position}
+      pathOptions={{ fillColor: fill, fillOpacity: 0.7 }}
+      radius={Math.max(props.square, MINIMUM_MARKER_SIZE)}
+      stroke={false}
+    >
+      <Tooltip>
+        <Card {...props} />
+      </Tooltip>
+    </Circle>
   );
 };

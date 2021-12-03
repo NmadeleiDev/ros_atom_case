@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import styled from "styled-components";
-import GoogleMapReact, { ChangeEventValue } from "google-map-react";
-import { googleMapStyles } from "styles/googleMap.styles";
 import useSWR from "swr";
 import { IPlace } from "pages/api/places";
-import Card from "./Card";
 import { useAppDispatch, useAppSelector } from "store/store";
 import { setMapSlice } from "store/features/map";
+import { MapContainer, Popup, TileLayer } from "react-leaflet";
+import { Map as LeafletMap } from "leaflet";
+import { debounce } from "lib/utils";
+import { Marker } from "components/Map/Marker";
 
 const StyledDiv = styled.div`
   background-color: #fafafa;
@@ -27,36 +28,45 @@ async function fetcher<JSON = any>(
 
 const Map = ({ className }: Props) => {
   const { center, zoom } = useAppSelector((state) => state.map);
+  const [map, setMap] = useState<LeafletMap>();
   const dispatch = useAppDispatch();
   const { data } = useSWR<IPlace[]>("/api/places", fetcher);
+  // console.log(data);
+  const onMove = useCallback(() => {
+    const onMoveCallback = debounce(() => {
+      const { lat, lng } = map?.getCenter() || center;
+      const newZoom = map?.getZoom() || zoom;
+      dispatch(setMapSlice({ center: { lat, lng }, zoom: newZoom }));
+    }, 1000);
+    onMoveCallback();
+  }, [map]);
 
-  const onChangeHandler = (e: ChangeEventValue) => {
-    console.log(e);
-    dispatch(setMapSlice(e));
-  };
+  useEffect(() => {
+    map?.on("move", onMove);
+    return () => {
+      map?.off("move", onMove);
+    };
+  }, [map, onMove]);
+
   return (
     <StyledDiv className={className}>
-      <GoogleMapReact
-        bootstrapURLKeys={{
-          key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API || "",
-        }}
-        defaultCenter={{ lat: 55.75, lng: 37.6 }}
-        defaultZoom={10}
+      <MapContainer
         center={center}
         zoom={zoom}
-        margin={[50, 50, 50, 50]}
-        options={{
-          disableDefaultUI: true,
-          zoomControl: true,
-          styles: googleMapStyles,
-        }}
-        onChange={onChangeHandler}
-        onChildClick={() => {}}
+        scrollWheelZoom={true}
+        style={{ height: "100%", width: "100%" }}
+        whenCreated={(map: LeafletMap) => setMap(map)}
       >
-        {data?.map((el) => (
-          <Card key={el.title} {...el} />
+        <TileLayer
+          maxZoom={20}
+          attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors'
+          url="https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"
+        />
+
+        {data?.map((el, i) => (
+          <Marker key={el.title + i} {...el} />
         ))}
-      </GoogleMapReact>
+      </MapContainer>
     </StyledDiv>
   );
 };
