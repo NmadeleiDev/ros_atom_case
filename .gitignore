@@ -45,3 +45,5 @@ vendor
 # dataset
 2021-16
 *.zip
+*.gz
+*.pkl

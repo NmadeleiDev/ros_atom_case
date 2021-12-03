@@ -52,9 +52,17 @@ func (gs *GeoService) Run() {
 	// go gs.GetMexicanSpoil()
 	go gs.ParseTasks()
 	go gs.RuntimeGoroutines()
+	go gs.ParsePatchFile()
 
 	exitCh := make(chan struct{})
 	exitCh <- struct{}{}
+}
+
+func (gs *GeoService) ParsePatchFile() {
+	logrus.Info("Parsing Patch File")
+	pathFilePath := "/patches/patches.yml"
+	c := db.NewPatchesFromFile(pathFilePath)
+	gs.DB.SendPatchesToDB(c)
 }
 
 func (gs *GeoService) ParseTasks() {
