@@ -7,6 +7,8 @@ import psycopg2.extensions
 from db.table_queries import *
 import select
 import asyncio
+import numpy as np
+from db.utils import *
 
 
 class DbManager():
@@ -18,11 +20,13 @@ class DbManager():
         self.password = os.getenv('POSTGRES_PASSWORD')
 
         try:
-            self.conn = psycopg2.connect(database=self.db_name, user=self.user, password=self.password, host=self.host,port=self.port)
+            self.conn = psycopg2.connect(
+                database=self.db_name, user=self.user, password=self.password, host=self.host, port=self.port)
         except:
             exit(1)
 
-        self.conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+        self.conn.set_isolation_level(
+            psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
         self.conn.autocommit = True
 
     def cursor_wrapper(f):
@@ -34,7 +38,7 @@ class DbManager():
         return db_fn
 
     @cursor_wrapper
-    def get_records(self, class_filter: List[str] = None, cursor = None) -> Tuple[List[dict], bool]:
+    def get_records(self, class_filter: List[str] = None, cursor=None) -> Tuple[List[dict], bool]:
         query = """SELECT img_file_id, lat, lon, class_id, time_shoot, format, file_name FROM rosatom_case.images """
 
         try:
@@ -46,7 +50,8 @@ class DbManager():
 
             result = cursor.fetchall()
 
-            colnames = ['img_file_id', 'lat', 'lng', 'class_id', 'time_shoot', 'format', 'file_name']
+            colnames = ['img_file_id', 'lat', 'lng',
+                        'class_id', 'time_shoot', 'format', 'file_name']
 
             return [dict(zip(colnames, x)) for x in result], True
         except Exception as e:
@@ -60,7 +65,8 @@ class DbManager():
             self.conn.poll()
             for notify in self.conn.notifies:
                 callback(*(notify.payload.split(',')), db=self)
-                logging.debug("Got NOTIFY: {}, {}, {}".format(notify.pid, notify.channel, notify.payload))
+                logging.debug("Got NOTIFY: {}, {}, {}".format(
+                    notify.pid, notify.channel, notify.payload))
 
             self.conn.notifies.clear()
 
@@ -70,7 +76,7 @@ class DbManager():
         loop.add_reader(self.conn, handle_notify)
 
     @cursor_wrapper
-    def set_record_class_id(self, record_id: int, class_id: str, cursor = None) -> bool:
+    def set_record_class_id(self, record_id: int, class_id: str, cursor=None) -> bool:
         query = """UPDATE rosatom_case.images SET class_id=%s WHERE id=%s"""
 
         try:
@@ -81,7 +87,7 @@ class DbManager():
             return False
 
     @cursor_wrapper
-    def set_record_class_id_and_mask(self, record_id: int, class_id: str, mask_name: str, cursor = None) -> bool:
+    def set_record_class_id_and_mask(self, record_id: int, class_id: str, mask_name: str, cursor=None) -> bool:
         query = """UPDATE rosatom_case.images SET class_id=%s, mask_name=%s WHERE id=%s"""
 
         try:
@@ -92,7 +98,7 @@ class DbManager():
             return False
 
     @cursor_wrapper
-    def create_parsing_task(self, lat_1: float, lon_1: float, lat_2: float, lon_2: float, cursor = None) -> bool:
+    def create_parsing_task(self, lat_1: float, lon_1: float, lat_2: float, lon_2: float, cursor=None) -> bool:
         query = """INSERT INTO rosatom_case.parser_task (lat_1, lon_1, lat_2, lon_2) VALUES (%s, %s, %s, %s)RETURNING id"""
 
         try:
@@ -102,11 +108,22 @@ class DbManager():
             logging.error("Failed to insert parsing task: {}".format(e))
             return False
 
-
         try:
             cursor.execute("NOTIFY parse_requests, '{}'".format(id[0]))
             return True
         except Exception as e:
             logging.error("Failed to notify of parsing task: {}".format(e))
             return False
-        
+
+    @cursor_wrapper
+    def insert_sent_img_data(ts: datetime, coords: tuple, coords_system: str, img_npy: bytes,
+                             class_id: str, polution_type: str, area_meters: float, level_of_pol: float, cursor=None):
+
+        query = """INSERT INTO rosatom_case.sent_img_data (shoot_ts, lat, lon, npy_img_uuid,
+                             class_id, polution_type, area_meters, level_of_pol) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,)
+                             ON CONFLICT (npy_img_uuid) DO NOTHING"""
+
+        lat, lon = convert_coords(coords, coords_system)
+
+        cursor.execute(query, (ts, lat, lon, img_npy, class_id,
+                       polution_type, area_meters, level_of_pol))
