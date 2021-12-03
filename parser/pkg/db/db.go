@@ -69,6 +69,11 @@ func New() *DB {
 }
 
 func (db *DB) CreateTable() error {
+	// err := db.Orm.Migrator().DropTable(&Image{})
+	// if err != nil {
+	// 	logrus.Fatal(err)
+	// }
+	// db.Orm.Exec("drop cascade schema if exists rosatom_case")
 	db.Orm.Exec("create schema if not exists rosatom_case")
 	// err := db.Orm.Debug().AutoMigrate(&Image{})
 	err := db.Orm.AutoMigrate(&Image{})

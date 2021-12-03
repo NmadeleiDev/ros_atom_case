@@ -48,10 +48,8 @@ services:
       - /etc/localtime:/etc/localtime/:ro
       - ./backend/:/app/:rw # для правки кода без перезагрузки
       - ./images:/service_data/images
-      - /home/greg/Yandex.Disk/Загрузки/Финал - ДЗЗ/Спутниковые снимки/Снимки
-        зафиксированных загрязнений:/raw_data/spills
-      - /home/greg/Yandex.Disk/Загрузки/Финал - ДЗЗ/Спутниковые снимки/Снимки
-        вдоль нефтепроводов:/raw_data/all_data
+      - /home/greg/Yandex.Disk/Загрузки/Финал - ДЗЗ/Спутниковые снимки/Снимки зафиксированных загрязнений:/raw_data/spills
+      - /home/greg/Yandex.Disk/Загрузки/Финал - ДЗЗ/Спутниковые снимки/Снимки вдоль нефтепроводов:/raw_data/all_data
       - ./Reestr-ZZ-na-18.05.2021.xlsx:/reestr.xlsx
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -65,12 +63,10 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.middlewares.test-compress.compress=true"
-      - "traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/bac\
-        kend" # declare middleware
+      - "traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/backend" # declare middleware
       - "traefik.http.routers.rosatom-backend.rule=Host(`${HOST:-localhost}`) &&
         PathPrefix(`/backend`)"
-      - "traefik.http.routers.rosatom-backend.middlewares=test-compress,backend\
-        -stripprefix" # apply middleware
+      - "traefik.http.routers.rosatom-backend.middlewares=test-compress,backend-stripprefix" # apply middleware
     depends_on:
       - traefik
       - db
@@ -113,8 +109,7 @@ services:
       - "traefik.http.middlewares.db-stripprefix.stripprefix.prefixes=/db" # declare middleware
       - "traefik.http.routers.rosatom-db.rule=Host(`${HOST:-localhost}`) &&
         PathPrefix(`/db`)"
-      - "traefik.http.routers.rosatom-db.middlewares=test-compress,db-strippref\
-        ix" # apply middleware
+      - "traefik.http.routers.rosatom-db.middlewares=test-compress,db-stripprefix" # apply middleware
     # check with docker run -it --rm --network rolling_drones_default postgres psql -h db -U postgres
 
   parser:
@@ -131,6 +126,15 @@ services:
       - "./parser/:/app/:rw" # для правки кода без перезагрузки
       - "./images/:/images"
       - "./patches/patches.yml:/patches/patches.yml:ro"
+    depends_on:
+      - db
+    labels:
+      # endpoint only for dev
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.test-compress.compress=true"
+      - "traefik.http.middlewares.parser-stripprefix.stripprefix.prefixes=/parser" # declare middleware
+      - "traefik.http.routers.rosatom-parser.rule=Host(`${HOST:-localhost}`) && PathPrefix(`/parser`)"
+      - "traefik.http.routers.rosatom-parser.middlewares=test-compress,parser-stripprefix" # apply middleware
 
   image_store:
     image: nginx:alpine
@@ -142,8 +146,7 @@ services:
       - "traefik.http.middlewares.image-stripprefix.stripprefix.prefixes=/image" # declare middleware
       - "traefik.http.routers.rosatom-store.rule=Host(`${HOST:-localhost}`) &&
         PathPrefix(`/image`)"
-      - "traefik.http.routers.rosatom-store.middlewares=test-compress,image-str\
-        ipprefix" # apply middleware
+      - "traefik.http.routers.rosatom-store.middlewares=test-compress,image-stripprefix" # apply middleware
 
   pgadmin:
     container_name: pgadmin4_container

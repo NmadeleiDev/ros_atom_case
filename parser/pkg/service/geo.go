@@ -49,20 +49,17 @@ func New() *GeoService {
 
 func (gs *GeoService) Run() {
 	defer gs.DB.Close()
-	// go gs.GetMexicanSpoil()
-	go gs.ParseTasks()
+
 	go gs.RuntimeGoroutines()
-	go gs.ParsePatchFile()
+
+	// go gs.ParsePatchFile()
+	// go gs.GetMexicanSpoil()
+	// go gs.GetHistorySpoils()
+	go gs.ParseTasks()
+	go gs.StartRoutingService()
 
 	exitCh := make(chan struct{})
 	exitCh <- struct{}{}
-}
-
-func (gs *GeoService) ParsePatchFile() {
-	logrus.Info("Parsing Patch File")
-	pathFilePath := "/patches/patches.yml"
-	c := db.NewPatchesFromFile(pathFilePath)
-	gs.DB.SendPatchesToDB(c)
 }
 
 func (gs *GeoService) ParseTasks() {
@@ -82,6 +79,18 @@ func (gs *GeoService) ParseTasks() {
 		logrus.Error(err)
 	}
 	logrus.Info("Parse Tasks stopped")
+}
+
+func (gs *GeoService) StartRoutingService() {
+	rs := NewRouteService()
+	rs.Start()
+}
+
+func (gs *GeoService) ParsePatchFile() {
+	logrus.Info("Parsing Patch File")
+	pathFilePath := "/patches/patches.yml"
+	c := db.NewPatchesFromFile(pathFilePath)
+	gs.DB.SendPatchesToDB(c)
 }
 
 func (gs *GeoService) ProcessTask(task *db.Task, timeStart, timeEnd time.Time) {
@@ -232,6 +241,95 @@ func (gs *GeoService) GetImage(tile *tile.Tile, t time.Time) error {
 	return nil
 }
 
+func (gs *GeoService) GetHistorySpoils() {
+	type Spot struct {
+		Lat  float64
+		Long float64
+	}
+	type Square struct {
+		X    int
+		Y    int
+		Zoom int
+	}
+	type Spoil struct {
+		Name string
+
+		LUSpot Spot
+		RDSpot Spot
+
+		Square
+
+		TimeStartStr string
+		TimeEndStr   string
+		TimeStart    time.Time
+		TimeEnd      time.Time
+	}
+
+	spoils := []*Spoil{
+		{
+			Name: "Mid-Valley Pipeline Mooringsport",
+			// 32.686944, -93.961667
+			LUSpot:       Spot{Lat: 31.6869, Long: -94.9616},
+			RDSpot:       Spot{Lat: 33.69, Long: -92.96},
+			TimeStartStr: "2014-10-13",
+			TimeEndStr:   "2014-11-13",
+		},
+		{
+			Name: "North Dakota train collision",
+			// 46.9, -97.210556
+			LUSpot:       Spot{Lat: 46.9, Long: -97.2},
+			RDSpot:       Spot{Lat: 46.9, Long: -97.2},
+			TimeStartStr: "2013-12-13",
+			TimeEndStr:   "2013-12-31",
+		},
+	}
+
+	var wg sync.WaitGroup
+
+	getImage := func(i interface{}) {
+		sp := i.(*Spoil)
+		defer wg.Done()
+		logrus.Infof("Getting image historical for %s. TimeStart: %s;TimeEnd: %s; X/Y/Zoom = %d/%d/%d", sp.Name, sp.TimeStartStr, sp.TimeEndStr, sp.X, sp.Y, sp.Zoom)
+		oneTile := tile.NewByColRowZoom(sp.X, sp.Y, sp.Zoom)
+		sp.TimeStart, _ = time.Parse("2006-01-02", sp.TimeStartStr)
+		sp.TimeEnd, _ = time.Parse("2006-01-02", sp.TimeEndStr)
+		gs.GetBestImageForTimeRange(sp.TimeStart.Add(time.Hour*24*-15), sp.TimeEnd, oneTile) // parse 15 days before also
+	}
+
+	p, _ := ants.NewPoolWithFunc(50, func(i interface{}) {
+		getImage(i)
+	})
+	defer p.Release()
+
+	// X Y matrix on ZOOM
+	zoom := 7
+	for _, spoil := range spoils {
+		spoil.Zoom = zoom
+		xMin, xMax, yMin, yMax := tile.GetMinMaxTilesFromRectangle(
+			spoil.LUSpot.Lat,
+			spoil.LUSpot.Long,
+			spoil.RDSpot.Lat,
+			spoil.RDSpot.Long,
+			spoil.Zoom,
+		)
+		logrus.Infof("xMin: %v\n", xMin)
+		logrus.Infof("xMax: %v\n", xMax)
+		logrus.Infof("yMin: %v\n", yMin)
+		logrus.Infof("yMax: %v\n", yMax)
+		for x := xMin; x <= xMax; x++ {
+			for y := yMin; y <= yMax; y++ {
+				wg.Add(1)
+
+				spoil.X = x
+				spoil.Y = y
+				_ = p.Invoke(spoil)
+			}
+		}
+		logrus.Infof("running goroutines: %d\n", p.Running())
+		wg.Wait()
+	}
+}
+
 func (gs *GeoService) GetMexicanSpoil() {
 	type Spot struct {
 		Lat  float64
@@ -291,7 +389,7 @@ func (gs *GeoService) GetMexicanSpoil() {
 func (gs *GeoService) RuntimeGoroutines() {
 	ng := 0
 	for {
-		<-time.After(time.Second * 15)
+		<-time.After(time.Second * 5)
 		if runtime.NumGoroutine() != ng {
 			logrus.Infof("runtime.NumGoroutine(): %v\n", runtime.NumGoroutine())
 			ng = runtime.NumGoroutine()
