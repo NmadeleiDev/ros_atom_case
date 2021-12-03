@@ -5,14 +5,21 @@ from parser_integration.wait_for_shots import start_waiting
 
 from db.manager import DbManager
 from api.handlers import apply_handlers
+from multiprocessing import Process
 from threading import Thread
+from initializer.parse_raw import DataInitializer
 
-logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S :', level=logging.DEBUG)
+
+logging.basicConfig(format='%(asctime)s %(message)s',
+                    datefmt='%m/%d/%Y %H:%M:%S :', level=logging.DEBUG)
 
 db = DbManager()
-
+db.create_tables()
 # Thread(target=start_waiting).start()
-start_waiting()
+# start_waiting()
+
+# t = Thread(target=DataInitializer().parse_data)
+# t.start()
 
 app = FastAPI(
     title="Service API",

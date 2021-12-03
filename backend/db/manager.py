@@ -1,4 +1,5 @@
 from datetime import datetime
+from io import BytesIO
 import os
 import logging
 import pickle
@@ -6,7 +7,6 @@ from typing import List, Tuple
 import psycopg2
 import psycopg2.extensions
 from db.table_queries import *
-import select
 import asyncio
 import numpy as np
 from db.utils import *
@@ -39,8 +39,17 @@ class DbManager():
         return db_fn
 
     @cursor_wrapper
+    def create_tables(self, cursor=None):
+        cursor.execute(schema_create_query)
+        cursor.execute(sent_imgs_table)
+
+    @cursor_wrapper
     def get_records(self, class_filter: List[str] = None, cursor=None) -> Tuple[List[dict], bool]:
-        query = """SELECT img_file_id, lat, lon, class_id, time_shoot, format, file_name FROM rosatom_case.images """
+        query = """SELECT id, shoot_ts, lat, lon,
+                        class_id, polution_type, area_meters, level_of_pol, company, license_area, 
+                        poluted_area_reg_n, location_of_poluted_area, adm_region, last_spill_date, 
+                        region_category, location_name, have_special_zones FROM rosatom_case.sentinel_images 
+                        LIMIT 500"""
 
         try:
             if class_filter is not None:
@@ -51,13 +60,28 @@ class DbManager():
 
             result = cursor.fetchall()
 
-            colnames = ['img_file_id', 'lat', 'lng',
-                        'class_id', 'time_shoot', 'format', 'file_name']
+            colnames = ['id', 'shoot_ts', 'lat', 'lng',
+                        'class_id', 'polution_type', 'area_meters', 'level_of_pol', 'company', 'license_area',
+                        'poluted_area_reg_n', 'location_of_poluted_area', 'adm_region', 'last_spill_date',
+                        'region_category', 'location_name', 'have_special_zones']
 
             return [dict(zip(colnames, x)) for x in result], True
         except Exception as e:
             logging.error("Failed get record data: {}".format(e))
             return [], False
+
+    @cursor_wrapper
+    def get_image(self, id: int, cursor=None) -> np.ndarray:
+        query = """SELECT npy_img_bytes FROM rosatom_case.sentinel_images WHERE id=%s"""
+
+        cursor.execute(query, (id, ))
+
+        imgs_bytes = cursor.fetchall()
+
+        if len(imgs_bytes) < 1:
+            return None
+        else:
+            return pickle.loads(imgs_bytes[0][0])
 
     @cursor_wrapper
     def listen_for_new_image_id(self, callback=None, cursor=None):
@@ -78,7 +102,7 @@ class DbManager():
 
     @cursor_wrapper
     def set_record_class_id(self, record_id: int, class_id: str, cursor=None) -> bool:
-        query = """UPDATE rosatom_case.images SET class_id=%s WHERE id=%s"""
+        query = """UPDATE rosatom_case.sentinel_images SET class_id=%s WHERE id=%s"""
 
         try:
             cursor.execute(query, [class_id, record_id])
@@ -118,13 +142,16 @@ class DbManager():
 
     @cursor_wrapper
     def insert_sent_img_data(self, ts: datetime, coords: tuple, coords_system: str, img_npy: bytes,
-                             class_id: str, polution_type: str, area_meters: float, level_of_pol: float, 
-                             company, license_area, poluted_area_reg_n, location_of_poluted_area, adm_region, last_spill_date, region_category, location_name, have_special_zones,
+                             class_id: str, polution_type: str, area_meters: float, level_of_pol: float,
+                             company, license_area, poluted_area_reg_n, location_of_poluted_area, adm_region,
+                             last_spill_date, region_category, location_name, have_special_zones,
                              cursor=None):
 
-        query = """INSERT INTO rosatom_case.sent_img_data (shoot_ts, lat, lon, npy_img_uuid,
-                             class_id, polution_type, area_meters, level_of_pol, company, license_area, poluted_area_reg_n, location_of_poluted_area, adm_region, last_spill_date, region_category, location_name, have_special_zones) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                             ON CONFLICT (npy_img_uuid) DO NOTHING"""
+        query = """INSERT INTO rosatom_case.sentinel_images (shoot_ts, lat, lon, npy_img_bytes,
+                             class_id, polution_type, area_meters, level_of_pol, company, license_area, 
+                             poluted_area_reg_n, location_of_poluted_area, adm_region, last_spill_date, 
+                             region_category, location_name, have_special_zones) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                             """
 
         lat, lon = convert_coords(coords, coords_system)
         np_imd_bytes = pickle.dumps(img_npy)

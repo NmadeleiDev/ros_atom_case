@@ -4,13 +4,15 @@ import os
 from fastapi import FastAPI, Response, status, UploadFile, File
 import pandas as pd
 import numpy as np
-from starlette.responses import FileResponse
+from starlette.responses import FileResponse, StreamingResponse
 
 from db.manager import DbManager
 from files_manager.files import get_img_path_by_id
 from .utils import *
 from .model import *
 from files_manager.files import save_img
+from PIL import Image
+import io
 
 
 def apply_handlers(app: FastAPI, db: DbManager):
@@ -24,21 +26,29 @@ def apply_handlers(app: FastAPI, db: DbManager):
         Возвращает список последних записей по каждому квадрату
         """
         records, ok = db.get_records()
-        # logging.info(records)
         if ok is False:
             response.status_code = status.HTTP_400_BAD_REQUEST
             return error_response('failed to get records')
-        # return success_response([LocationData(**x) for x in records])
-        return success_response([x for x in records])
+        return success_response(records)
+
+    @app.get("/img/{id}", status_code=status.HTTP_200_OK)
+    def get_records(id: int, response: Response):
+        """
+        Возвращает список последних записей по каждому квадрату
+        """
+        img = db.get_image(id)
+        logging.info("shape={}, img={}".format(img.shape, img))
+        # return success_response(Image.fromarray(img).tobytes())
+        return Response(content=Image.fromarray(img).tobytes(), media_type="image/png")
 
     @app.post("/parse", status_code=status.HTTP_200_OK, response_model=DefaultResponseModel[dict])
     def create_parsing_task(body: ParsingTask, response: Response):
         """
         Создание запроса на парсинг
         """
-        ok = db.create_parsing_task(body.northWest.lat, body.northWest.lon, body.southEast.lat, body.southEast.lon)
+        ok = db.create_parsing_task(
+            body.northWest.lat, body.northWest.lon, body.southEast.lat, body.southEast.lon)
         if ok is False:
             response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
             return error_response('failed to create parsing task')
         return success_response()
-
