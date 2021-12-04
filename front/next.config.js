@@ -2,6 +2,6 @@
 module.exports = {
   reactStrictMode: true,
   images: {
-    domains: ["gibs.earthdata.nasa.gov"],
+    domains: ["gibs.earthdata.nasa.gov", "localhost"],
   },
 };

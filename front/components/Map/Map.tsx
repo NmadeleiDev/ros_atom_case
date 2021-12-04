@@ -1,13 +1,14 @@
 import React, { useCallback, useEffect, useState } from "react";
 import styled from "styled-components";
 import useSWR from "swr";
-import { IPlace } from "pages/api/places";
+import { IData } from "store/features/data";
 import { useAppDispatch, useAppSelector } from "store/store";
 import { setMapSlice } from "store/features/map";
 import { MapContainer, Popup, TileLayer } from "react-leaflet";
 import { Map as LeafletMap } from "leaflet";
 import { debounce } from "lib/utils";
 import { Marker } from "components/Map/Marker";
+import { addItems } from "store/features/data";
 
 const StyledDiv = styled.div`
   background-color: #fafafa;
@@ -17,6 +18,11 @@ const StyledDiv = styled.div`
 
 interface Props {
   className?: string;
+}
+interface IResponse {
+  status: true;
+  error: null;
+  data: IData[];
 }
 async function fetcher<JSON = any>(
   input: RequestInfo,
@@ -30,8 +36,13 @@ const Map = ({ className }: Props) => {
   const { center, zoom } = useAppSelector((state) => state.map);
   const [map, setMap] = useState<LeafletMap>();
   const dispatch = useAppDispatch();
-  const { data } = useSWR<IPlace[]>("/api/places", fetcher);
-  // console.log(data);
+  const { data } = useSWR<IResponse>(
+    "http://localhost/backend/records",
+    fetcher
+  );
+  console.log(data);
+  data && dispatch(addItems(data.data));
+
   const onMove = useCallback(() => {
     const onMoveCallback = debounce(() => {
       const { lat, lng } = map?.getCenter() || center;
@@ -39,6 +50,7 @@ const Map = ({ className }: Props) => {
       dispatch(setMapSlice({ center: { lat, lng }, zoom: newZoom }));
     }, 1000);
     onMoveCallback();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map]);
 
   useEffect(() => {
@@ -63,8 +75,8 @@ const Map = ({ className }: Props) => {
           url="https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"
         />
 
-        {data?.map((el, i) => (
-          <Marker key={el.title + i} {...el} />
+        {data?.data?.map((el, i) => (
+          <Marker key={el.location_name + i} {...el} />
         ))}
       </MapContainer>
     </StyledDiv>

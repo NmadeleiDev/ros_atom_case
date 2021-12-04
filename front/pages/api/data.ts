@@ -1,7 +1,7 @@
 import { LatLngLiteral } from "leaflet";
 import type { NextApiRequest, NextApiResponse } from "next";
 
-export interface IData {
+export interface IMockData {
   id: string;
   factory: string;
   zoneName: string;
@@ -23,7 +23,7 @@ export interface IData {
 }
 
 export const headers = {
-  factory: "Предприятие",
+  company: "Предприятие",
   zoneName: "Лицензионный участок",
   zoneNumber: "Номер лицензионного участка",
   materialType: "Вид загрязняющего вещества",
@@ -43,7 +43,7 @@ export const headers = {
 
 export default function handler(
   req: NextApiRequest,
-  res: NextApiResponse<IData[]>
+  res: NextApiResponse<IMockData[]>
 ) {
   res.status(200).json([
     {
@@ -84,6 +84,49 @@ export default function handler(
       actDate: "",
       landType: "земли лесного фонда",
       square: 0.1357,
+      landLevelPollution: "сильное",
+      waterLevelPollution: "0",
+      image:
+        "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/2021-11-17/250m/8/41/75.jpg",
+    },
+    {
+      id: "3",
+      factory: 'ООО "КанБайкал"',
+      zoneName: "Унтыгейский",
+      zoneNumber: "ХМН10457НР",
+      materialType: "нефть, нефтепродукты",
+      regNumber: "КБ-2020-1",
+      placement:
+        "УЗА №9 Напорного нефтепровода ДНС Унтыгейского м/р-ПСП НПС Южный Балык",
+      region: "Нефтеюганский",
+      position: { lat: 60.30015, lng: 72.56134 },
+      regDate: "05.03.2021",
+      lastIncedentDate: "28.06.2020",
+      actNumber: "28/6",
+      actDate: "28.06.2021",
+      landType: "земли лесного фонда",
+      square: 0.22,
+      landLevelPollution: "-",
+      waterLevelPollution: "-",
+      image:
+        "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/2021-11-17/250m/8/41/75.jpg",
+    },
+    {
+      id: "4",
+      factory: 'ОАО "Варьеганнефть"',
+      zoneName: "Тагринский",
+      zoneNumber: "ХМН10461НЭ",
+      materialType: "нефть",
+      regNumber: "РУССН-2013-75",
+      placement: "район к.8, выдел 1 и 2",
+      region: "Нижневартовский",
+      position: { lat: 78.1036, lng: 62.194 },
+      regDate: "15.02.2014",
+      lastIncedentDate: "23.06.05",
+      actNumber: "",
+      actDate: "",
+      landType: "земли лесного фонда",
+      square: 0.741,
       landLevelPollution: "сильное",
       waterLevelPollution: "0",
       image:

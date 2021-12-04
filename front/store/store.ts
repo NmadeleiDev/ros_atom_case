@@ -1,10 +1,12 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 import mapReducer from "./features/map";
+import dataReducer from "./features/data";
 
 export const store = configureStore({
   reducer: {
     map: mapReducer,
+    data: dataReducer,
   },
 });
 
