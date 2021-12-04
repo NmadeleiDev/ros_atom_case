@@ -38,7 +38,10 @@ create table if not exists rosatom_case.sentinel_images
 	have_special_zones varchar default null,
 
 	level_of_pol float default 0,
-	area_meters float default 0
+	area_meters float default 0,
+
+	is_from_target boolean default false,
+	is_processed boolean default false
 
 );
 """

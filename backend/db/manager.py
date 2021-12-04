@@ -1,5 +1,4 @@
 from datetime import datetime
-from io import BytesIO
 import os
 import logging
 import pickle
@@ -9,6 +8,7 @@ import psycopg2.extensions
 from db.table_queries import *
 import asyncio
 import numpy as np
+import pandas as pd
 from db.utils import *
 
 
@@ -21,14 +21,18 @@ class DbManager():
         self.password = os.getenv('POSTGRES_PASSWORD')
 
         try:
+            logging.info("Establishing db connection... {}".format(
+                (self.db_name, self.user, self.password, self.host, self.port)))
             self.conn = psycopg2.connect(
                 database=self.db_name, user=self.user, password=self.password, host=self.host, port=self.port)
-        except:
+        except Exception as e:
+            logging.fatal("Failed to connect to db: {}".format(e))
             exit(1)
 
         self.conn.set_isolation_level(
             psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
         self.conn.autocommit = True
+        logging.info("Connected to db")
 
     def cursor_wrapper(f):
         def db_fn(self, *args, **kwargs):
@@ -42,21 +46,24 @@ class DbManager():
     def create_tables(self, cursor=None):
         cursor.execute(schema_create_query)
         cursor.execute(sent_imgs_table)
+        logging.debug("Tables created")
 
     @cursor_wrapper
-    def get_records(self, class_filter: List[str] = None, cursor=None) -> Tuple[List[dict], bool]:
+    def get_records(self, offset=0, class_filter: List[str] = None, cursor=None) -> Tuple[List[dict], bool]:
         query = """SELECT id, shoot_ts, lat, lon,
                         class_id, polution_type, area_meters, level_of_pol, company, license_area, 
                         poluted_area_reg_n, location_of_poluted_area, adm_region, last_spill_date, 
                         region_category, location_name, have_special_zones FROM rosatom_case.sentinel_images 
-                        LIMIT 500"""
+                        WHERE class_id != ''
+                        ORDER_BY shoot_ts DESC
+                        OFFSET %s LIMIT 500"""
 
         try:
             if class_filter is not None:
                 query += "WHERE class_id IN %s"
-                cursor.execute(query, class_filter)
+                cursor.execute(query, (offset, class_filter))
             else:
-                cursor.execute(query)
+                cursor.execute(query, (offset, ))
 
             result = cursor.fetchall()
 
@@ -82,6 +89,34 @@ class DbManager():
             return None
         else:
             return pickle.loads(imgs_bytes[0][0])
+
+    @cursor_wrapper
+    def get_data_for_training(self, cursor=None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        query = """SELECT npy_img_bytes, class_id, polution_type, area_meters, level_of_pol FROM rosatom_case.sentinel_images"""
+
+        cursor.execute(query)
+
+        data = cursor.fetchall()
+        imgs, labels, ptypes, pareas, lofp = zip(*data)
+        return np.stack([pickle.loads(x) for x in imgs], axis=0), np.array(labels), np.array(ptypes), np.array(pareas), np.array(lofp)
+
+    @cursor_wrapper
+    def get_not_processed_data(self, cursor=None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        query = """SELECT npy_img_bytes, id FROM rosatom_case.sentinel_images WHERE is_processed = false AND class_id = ''"""
+
+        cursor.execute(query)
+
+        data = cursor.fetchall()
+        imgs, ids = zip(*data)
+        return np.stack([pickle.loads(x) for x in imgs], axis=0), list(ids)
+
+    @cursor_wrapper
+    def save_predicted_data(self, labels, ptypes, pareas, lofp, id, cursor=None):
+        query = """UPDATE rosatom_case.sentinel_images 
+                SET (class_id, polution_type, area_meters, level_of_pol, is_processed) = (%s,%s,%s,%s,%s)
+                WHERE id=%s"""
+
+        cursor.execute(query, (labels, ptypes, pareas, lofp, True, id))
 
     @cursor_wrapper
     def listen_for_new_image_id(self, callback=None, cursor=None):
@@ -144,17 +179,19 @@ class DbManager():
     def insert_sent_img_data(self, ts: datetime, coords: tuple, coords_system: str, img_npy: bytes,
                              class_id: str, polution_type: str, area_meters: float, level_of_pol: float,
                              company, license_area, poluted_area_reg_n, location_of_poluted_area, adm_region,
-                             last_spill_date, region_category, location_name, have_special_zones,
+                             last_spill_date, region_category, location_name, have_special_zones, is_from_target,
                              cursor=None):
 
         query = """INSERT INTO rosatom_case.sentinel_images (shoot_ts, lat, lon, npy_img_bytes,
                              class_id, polution_type, area_meters, level_of_pol, company, license_area, 
                              poluted_area_reg_n, location_of_poluted_area, adm_region, last_spill_date, 
-                             region_category, location_name, have_special_zones) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                             region_category, location_name, have_special_zones, is_from_target) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                              """
 
         lat, lon = convert_coords(coords, coords_system)
         np_imd_bytes = pickle.dumps(img_npy)
 
         cursor.execute(query, (ts, lat, lon, np_imd_bytes, class_id,
-                       polution_type, area_meters, level_of_pol, company, license_area, poluted_area_reg_n, location_of_poluted_area, adm_region, last_spill_date, region_category, location_name, have_special_zones))
+                       polution_type, area_meters, level_of_pol, company, license_area, poluted_area_reg_n,
+                       location_of_poluted_area, adm_region, last_spill_date, region_category, location_name,
+                       have_special_zones, is_from_target))

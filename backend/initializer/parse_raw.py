@@ -11,12 +11,13 @@ import pandas as pd
 import logging
 import glob
 import numpy as np
+from nn_model_interface.manager import train_models, get_predict_for_img_array
 
 
 class DataInitializer():
     def __init__(self) -> None:
         self.db = DbManager()
-        self.all_data = '/raw_data/all_data'
+        self.regular_data = '/raw_data/all_data'
         self.spills_data = '/raw_data/spills'
 
         self.locs_data = pd.read_excel('/reestr.xlsx')
@@ -49,7 +50,7 @@ class DataInitializer():
                 result.extend(self.parse_folder(f.path))
         return result
 
-    def process_location_dir(self, dir_path):
+    def process_location_dir(self, dir_path, class_id_known='', is_from_target: bool = False):
         loc_name = path.basename(dir_path)
         if loc_name in self.locs_data.index:
             location_name = loc_name
@@ -85,7 +86,7 @@ class DataInitializer():
             logging.warn("loc_name={} not in index".format(loc_name))
         logging.info("Parsing {}".format(loc_name))
 
-        conts = self.parse_folder(dir_path)
+        conts = self.parse_folder(path.join(dir_path, 'data'))
         npy_file_path = [x for x in conts if x.endswith('.npy.gz')]
         if len(npy_file_path) != 1:
             return
@@ -103,15 +104,17 @@ class DataInitializer():
         img_contents = np.load(gzip.GzipFile(npy_file_path))
 
         logging.info("Img shape: {}".format(img_contents.shape))
+        if img_contents.shape[-1] != 13:
+            return
 
         bbox = list(bbox_content)
         for ts, img_cont in zip(ts_content, img_contents):
             # logging.info("Args: {}".format([ts, bbox, img_cont, '', polution_type, area_m, level_of_polution, company, license_area,
             #                                 poluted_area_reg_n, location_of_poluted_area, adm_region, last_spill_date, region_category, location_name, have_special_zones]))
 
-            self.db.insert_sent_img_data(ts, bbox, '', img_cont, '', polution_type, area_m, level_of_polution,
+            self.db.insert_sent_img_data(ts, bbox, '', img_cont, class_id_known, polution_type, area_m, level_of_polution,
                                          company, license_area, poluted_area_reg_n, location_of_poluted_area,
-                                         adm_region, last_spill_date, region_category, location_name, have_special_zones)
+                                         adm_region, last_spill_date, region_category, location_name, have_special_zones, is_from_target)
 
     def unzip_target_ar(self, f_path: str):
         save_dir = tempfile.TemporaryDirectory()
@@ -132,29 +135,26 @@ class DataInitializer():
             if f.is_dir():
                 for loc_dir in os.scandir(f.path):
                     if loc_dir.is_dir():
-                        self.process_location_dir(loc_dir.path)
+                        try:
+                            self.process_location_dir(loc_dir.path, 'oil')
+                        except Exception as e:
+                            logging.error(
+                                "Error reading location info: {}".format(e))
 
         save_dir.cleanup()
 
     def unzip_reg_ar(self, f_path: str):
-        loc_dir_glop_pattern = "/*/*/*/*/*/*"
-        bbox_glop_pattern = "/*/*/*/*/*/*/bbox.pkl.gz"
-        ts_glop_pattern = "/*/*/*/*/*/*/timestamp.pkl.gz"
-        np_img_glop_pattern = "/*/*/*/*/*/*/*/*.npy.gz"
+        loc_dir_glop_pattern = "*/*/*/*/*/*"
 
         save_dir = tempfile.TemporaryDirectory()
 
         with zipfile.ZipFile(f_path, 'r') as zip_ref:
-            zipinfos = zip_ref.infolist()
+            zip_ref.extractall(save_dir.name)
 
-            for zipinfo in zipinfos:
-                zipinfo.filename = zipinfo.filename.encode(
-                    'cp437').decode('cp866')
+        loc_dir_glop_pattern = path.join(save_dir.name, "*/*/*/*/*/*")
 
-                zip_ref.extract(zipinfo, save_dir.name)
-
-        logging.info("Extracted {} to dir {}, content: {}".format(
-            f_path, save_dir.name, os.listdir(save_dir.name)))
+        logging.info("Extracted {} to dir {}, content: {}, glob_search: {}".format(
+            f_path, save_dir.name, os.listdir(save_dir.name), glob.glob(loc_dir_glop_pattern)))
 
         for n in glob.glob(loc_dir_glop_pattern):
             self.process_location_dir(n)
@@ -162,10 +162,25 @@ class DataInitializer():
         save_dir.cleanup()
 
     def parse_data(self):
+        logging.info("Started data initialization")
+
         target_data = self.parse_folder(self.spills_data, '.zip')
-        reg_data = self.parse_folder(self.all_data, '.zip')
+        reg_data = self.parse_folder(self.regular_data, '.zip')
+
+        logging.info("target_data: {}".format(target_data))
+        for n in target_data[:1]:
+            self.unzip_target_ar(f_path=n)
 
         # logging.info("Reg_data: {}".format(reg_data))
-        logging.info("target_data: {}".format(target_data))
-        for n in target_data:
-            self.unzip_target_ar(f_path=n)
+        # for n in reg_data[:1]:
+        #     self.unzip_reg_ar(f_path=n)
+
+        if os.getenv('DO_RETRAIN') == '1':
+            train_models()
+
+        np_imgs, ids = self.db.get_not_processed_data()
+
+        labels, squares, measures, types = get_predict_for_img_array(np_imgs)
+
+        for label, square, measure, type, id in zip(labels, squares, measures, types, ids):
+            self.db.save_predicted_data(label, type, square, measure, id)
